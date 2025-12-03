@@ -7,13 +7,16 @@ import toast from 'react-hot-toast';
 const ContactDetailModal = ({ contact, onClose, onEdit }) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const formatLastSeen = (timestamp) => {
+    if (!timestamp) return 'Never';
     const date = new Date(timestamp);
     const now = new Date();
     const diffMs = now - date;
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffHours < 24) {
+    if (diffHours < 1) {
+      return 'Just now';
+    } else if (diffHours < 24) {
       return `${diffHours}h ago`;
     } else if (diffDays === 1) {
       return 'Yesterday';
@@ -54,7 +57,7 @@ const ContactDetailModal = ({ contact, onClose, onEdit }) => {
             </div>
             <div>
               <h2 className="text-2xl font-bold text-gray-900">{contact.name}</h2>
-              <p className="text-gray-500">{contact.relationshipDetail}</p>
+              <p className="text-gray-500">{contact.relationship_detail}</p>
             </div>
           </div>
           <button
@@ -71,28 +74,28 @@ const ContactDetailModal = ({ contact, onClose, onEdit }) => {
           <div className="grid md:grid-cols-2 gap-6 mb-6">
             <div className="bg-gray-50 rounded-xl p-4">
               <p className="text-xs text-gray-500 mb-1">Last Seen</p>
-              <p className="font-semibold text-gray-900">{formatLastSeen(contact.lastSeen)}</p>
+              <p className="font-semibold text-gray-900">{contact.last_seen ? formatLastSeen(contact.last_seen) : 'Never'}</p>
             </div>
             <div className="bg-gray-50 rounded-xl p-4">
               <p className="text-xs text-gray-500 mb-1">Total Interactions</p>
-              <p className="font-semibold text-gray-900">{contact.totalInteractions}</p>
+              <p className="font-semibold text-gray-900">{contact.totalInteractions || 0}</p>
             </div>
             <div className="bg-gray-50 rounded-xl p-4">
               <p className="text-xs text-gray-500 mb-1">Visit Frequency</p>
-              <p className="font-semibold text-gray-900">{contact.visitFrequency}</p>
+              <p className="font-semibold text-gray-900">{contact.visit_frequency || 'N/A'}</p>
             </div>
 
           </div>
 
           {/* Contact Information */}
-          {(contact.phoneNumber || contact.email) && (
+          {(contact.phone_number || contact.email) && (
             <div className="mb-6">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">Contact Information</h3>
               <div className="space-y-3">
-                {contact.phoneNumber && (
+                {contact.phone_number && (
                   <div className="flex items-center gap-3">
                     <Phone className="h-5 w-5 text-gray-400" />
-                    <span className="text-gray-700">{contact.phoneNumber}</span>
+                    <span className="text-gray-700">{contact.phone_number}</span>
                   </div>
                 )}
                 {contact.email && (

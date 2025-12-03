@@ -1,18 +1,23 @@
 import { useState, useRef } from 'react';
+import { useNavigate } from 'react-router';
 import { X, Upload } from 'lucide-react';
+import { contactsApi } from '../services/api';
+import toast from 'react-hot-toast';
 
-const AddContactModal = ({ isOpen, onClose }) => {
+const AddContactModal = ({ isOpen, onClose, onSave, navigateAfterSave = false }) => {
+  const navigate = useNavigate();
   const [formStep, setFormStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
     relationship: 'family',
-    relationshipDetail: '',
+    relationship_detail: '',
     notes: '',
-    phoneNumber: '',
+    phone_number: '',
     email: '',
-    visitFrequency: '',
+    visit_frequency: '',
     photos: []
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleFileChange = (e) => {
@@ -24,11 +29,55 @@ const AddContactModal = ({ isOpen, onClose }) => {
     fileInputRef.current?.click();
   };
 
-  const handleSubmit = () => {
-    // TODO: Implement actual contact creation logic
-    console.log('Creating contact:', formData);
-    onClose();
-    alert('Contact added successfully!');
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    
+    try {
+      // Prepare data for API (exclude photos for now as they need special handling)
+      const contactData = {
+        name: formData.name,
+        relationship: formData.relationship,
+        relationship_detail: formData.relationship_detail,
+        notes: formData.notes,
+        phone_number: formData.phone_number,
+        email: formData.email,
+        visit_frequency: formData.visit_frequency,
+        avatar: formData.name.substring(0, 2).toUpperCase(), // Use initials as avatar
+        color: 'indigo'
+      };
+      
+      const response = await contactsApi.create(contactData);
+      toast.success('Contact added successfully!');
+      
+      if (onSave) {
+        onSave(response.data);
+      }
+      
+      // Reset form
+      setFormData({
+        name: '',
+        relationship: 'family',
+        relationship_detail: '',
+        notes: '',
+        phone_number: '',
+        email: '',
+        visit_frequency: '',
+        photos: []
+      });
+      setFormStep(1);
+      
+      // Navigate to contacts page if requested (before closing modal)
+      if (navigateAfterSave) {
+        navigate('/dashboard/contacts');
+      }
+      
+      onClose();
+    } catch (error) {
+      console.error('Error creating contact:', error);
+      toast.error(error.response?.data?.detail || 'Failed to add contact');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -129,8 +178,8 @@ const AddContactModal = ({ isOpen, onClose }) => {
                 </label>
                 <input
                   type="text"
-                  value={formData.relationshipDetail}
-                  onChange={(e) => setFormData({ ...formData, relationshipDetail: e.target.value })}
+                  value={formData.relationship_detail}
+                  onChange={(e) => setFormData({ ...formData, relationship_detail: e.target.value })}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl
                     focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                   placeholder="e.g., Daughter, Grandson, Primary Physician"
@@ -190,8 +239,8 @@ const AddContactModal = ({ isOpen, onClose }) => {
                 </label>
                 <input
                   type="tel"
-                  value={formData.phoneNumber}
-                  onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                  value={formData.phone_number}
+                  onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl
                     focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                   placeholder="(555) 123-4567"
@@ -218,8 +267,8 @@ const AddContactModal = ({ isOpen, onClose }) => {
                 </label>
                 <input
                   type="text"
-                  value={formData.visitFrequency}
-                  onChange={(e) => setFormData({ ...formData, visitFrequency: e.target.value })}
+                  value={formData.visit_frequency}
+                  onChange={(e) => setFormData({ ...formData, visit_frequency: e.target.value })}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl
                     focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                   placeholder="e.g., Daily, Weekly, Monthly"
@@ -253,13 +302,13 @@ const AddContactModal = ({ isOpen, onClose }) => {
                 <div>
                   <dt className="text-sm text-gray-500">Relationship</dt>
                   <dd className="text-gray-900 font-medium">
-                    {formData.relationshipDetail || 'Not provided'}
+                    {formData.relationship_detail || 'Not provided'}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-sm text-gray-500">Phone</dt>
                   <dd className="text-gray-900 font-medium">
-                    {formData.phoneNumber || 'Not provided'}
+                    {formData.phone_number || 'Not provided'}
                   </dd>
                 </div>
                 <div>
@@ -269,7 +318,7 @@ const AddContactModal = ({ isOpen, onClose }) => {
                 <div>
                   <dt className="text-sm text-gray-500">Visit Frequency</dt>
                   <dd className="text-gray-900 font-medium">
-                    {formData.visitFrequency || 'Not provided'}
+                    {formData.visit_frequency || 'Not provided'}
                   </dd>
                 </div>
               </dl>
@@ -295,9 +344,10 @@ const AddContactModal = ({ isOpen, onClose }) => {
                 handleSubmit();
               }
             }}
-            className="flex-1 px-6 py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors"
+            disabled={isSubmitting}
+            className="flex-1 px-6 py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {formStep < 4 ? 'Next' : 'Add Contact'}
+            {isSubmitting ? 'Adding...' : (formStep < 4 ? 'Next' : 'Add Contact')}
           </button>
         </div>
       </div>

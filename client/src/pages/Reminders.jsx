@@ -55,16 +55,9 @@ const Reminders = () => {
     }
   };
 
-  const handleAddReminder = async (newReminder) => {
-    try {
-      await remindersApi.create(newReminder);
-      toast.success("Reminder added successfully");
-      setShowAddModal(false);
-      fetchReminders();
-    } catch (error) {
-      console.error("Error adding reminder:", error);
-      toast.error("Failed to add reminder");
-    }
+  const handleAddReminder = () => {
+    // Refresh the reminders list after adding
+    fetchReminders();
   };
 
   const reminderTypes = [
@@ -291,7 +284,7 @@ const Reminders = () => {
       <AddReminderModal 
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        onSave={handleAddReminder} // Assuming AddReminderModal accepts onSave
+        onSave={handleAddReminder}
       />
 
       {/* Delete Confirmation Modal */}

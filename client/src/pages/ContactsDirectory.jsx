@@ -35,28 +35,14 @@ const ContactsDirectory = () => {
     fetchContacts();
   }, []);
 
-  const handleAddContact = async (newContactData) => {
-    try {
-      await contactsApi.create(newContactData);
-      toast.success("Contact added successfully");
-      setShowAddModal(false);
-      fetchContacts();
-    } catch (error) {
-      console.error("Error adding contact:", error);
-      toast.error("Failed to add contact");
-    }
+  const handleAddContact = () => {
+    // Refresh the contacts list after adding
+    fetchContacts();
   };
 
-  const handleUpdateContact = async (updatedContactData) => {
-    try {
-      await contactsApi.update(updatedContactData.id, updatedContactData);
-      toast.success("Contact updated successfully");
-      setShowEditModal(false);
-      fetchContacts();
-    } catch (error) {
-      console.error("Error updating contact:", error);
-      toast.error("Failed to update contact");
-    }
+  const handleUpdateContact = () => {
+    // Refresh the contacts list after updating
+    fetchContacts();
   };
 
   const relationshipTypes = [
@@ -71,7 +57,7 @@ const ContactsDirectory = () => {
 
   const filteredContacts = contacts.filter(contact => {
     const matchesSearch = contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (contact.relationshipDetail && contact.relationshipDetail.toLowerCase().includes(searchQuery.toLowerCase()));
+      (contact.relationship_detail && contact.relationship_detail.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const matchesRelationship = selectedRelationship === 'all' || contact.relationship === selectedRelationship;
 
@@ -86,7 +72,9 @@ const ContactsDirectory = () => {
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffHours < 24) {
+    if (diffHours < 1) {
+      return 'Just now';
+    } else if (diffHours < 24) {
       return `${diffHours}h ago`;
     } else if (diffDays === 1) {
       return 'Yesterday';
@@ -198,18 +186,18 @@ const ContactsDirectory = () => {
                   {contact.name}
                 </h3>
                 <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg mt-2">
-                  {contact.relationshipDetail || contact.relationship}
+                  {contact.relationship_detail || contact.relationship}
                 </span>
               </div>
 
               <div className="space-y-2 text-sm text-gray-600">
                 <div className="flex justify-between">
                   <span>Last seen:</span>
-                  <span className="font-medium text-gray-900">{formatLastSeen(contact.lastSeen)}</span>
+                  <span className="font-medium text-gray-900">{formatLastSeen(contact.last_seen)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Frequency:</span>
-                  <span className="font-medium text-gray-900">{contact.visitFrequency || 'N/A'}</span>
+                  <span className="font-medium text-gray-900">{contact.visit_frequency || 'N/A'}</span>
                 </div>
               </div>
             </div>
@@ -235,16 +223,16 @@ const ContactsDirectory = () => {
                   <h3 className="text-lg font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
                     {contact.name}
                   </h3>
-                  <p className="text-sm text-gray-500">{contact.relationshipDetail || contact.relationship}</p>
+                  <p className="text-sm text-gray-500">{contact.relationship_detail || contact.relationship}</p>
                 </div>
                 <div className="hidden md:flex items-center gap-8 text-sm">
                   <div>
                     <p className="text-gray-500 text-xs">Last Seen</p>
-                    <p className="font-medium text-gray-900">{formatLastSeen(contact.lastSeen)}</p>
+                    <p className="font-medium text-gray-900">{formatLastSeen(contact.last_seen)}</p>
                   </div>
                   <div>
                     <p className="text-gray-500 text-xs">Frequency</p>
-                    <p className="font-medium text-gray-900">{contact.visitFrequency || 'N/A'}</p>
+                    <p className="font-medium text-gray-900">{contact.visit_frequency || 'N/A'}</p>
                   </div>
                 </div>
                 <Eye className="h-5 w-5 text-gray-400 group-hover:text-indigo-600 transition-colors" />
@@ -265,7 +253,7 @@ const ContactsDirectory = () => {
         <AddContactModal 
           isOpen={true} 
           onClose={() => setShowAddModal(false)}
-          onSave={handleAddContact} // Assuming AddContactModal accepts onSave
+          onSave={handleAddContact}
         />
       )}
       {showDetailModal && selectedContact && (
@@ -286,7 +274,7 @@ const ContactsDirectory = () => {
           isOpen={true}
           contact={selectedContact}
           onClose={() => setShowEditModal(false)}
-          onUpdate={handleUpdateContact} // Assuming EditContactModal accepts onUpdate
+          onUpdate={handleUpdateContact}
         />
       )}
     </div>

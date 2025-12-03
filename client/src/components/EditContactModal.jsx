@@ -1,18 +1,21 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Upload } from 'lucide-react';
+import { contactsApi } from '../services/api';
+import toast from 'react-hot-toast';
 
 const EditContactModal = ({ isOpen, onClose, contact, onUpdate }) => {
   const [formStep, setFormStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
     relationship: 'family',
-    relationshipDetail: '',
+    relationship_detail: '',
     notes: '',
-    phoneNumber: '',
+    phone_number: '',
     email: '',
-    visitFrequency: '',
+    visit_frequency: '',
     photos: []
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -20,11 +23,11 @@ const EditContactModal = ({ isOpen, onClose, contact, onUpdate }) => {
       setFormData({
         name: contact.name || '',
         relationship: contact.relationship || 'family',
-        relationshipDetail: contact.relationshipDetail || '',
+        relationship_detail: contact.relationship_detail || '',
         notes: contact.notes || '',
-        phoneNumber: contact.phoneNumber || '',
+        phone_number: contact.phone_number || '',
         email: contact.email || '',
-        visitFrequency: contact.visitFrequency || '',
+        visit_frequency: contact.visit_frequency || '',
         photos: contact.photos || []
       });
     }
@@ -39,11 +42,36 @@ const EditContactModal = ({ isOpen, onClose, contact, onUpdate }) => {
     fileInputRef.current?.click();
   };
 
-  const handleSubmit = () => {
-    if (onUpdate) {
-        onUpdate({ ...contact, ...formData });
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    
+    try {
+      const contactData = {
+        name: formData.name,
+        relationship: formData.relationship,
+        relationship_detail: formData.relationship_detail,
+        notes: formData.notes,
+        phone_number: formData.phone_number,
+        email: formData.email,
+        visit_frequency: formData.visit_frequency,
+        avatar: contact.avatar || formData.name.substring(0, 2).toUpperCase(),
+        color: contact.color || 'indigo'
+      };
+      
+      await contactsApi.update(contact.id, contactData);
+      toast.success('Contact updated successfully!');
+      
+      if (onUpdate) {
+        onUpdate();
+      }
+      
+      onClose();
+    } catch (error) {
+      console.error('Error updating contact:', error);
+      toast.error(error.response?.data?.detail || 'Failed to update contact');
+    } finally {
+      setIsSubmitting(false);
     }
-    onClose();
   };
 
   if (!isOpen) return null;
@@ -144,8 +172,8 @@ const EditContactModal = ({ isOpen, onClose, contact, onUpdate }) => {
                 </label>
                 <input
                   type="text"
-                  value={formData.relationshipDetail}
-                  onChange={(e) => setFormData({ ...formData, relationshipDetail: e.target.value })}
+                  value={formData.relationship_detail}
+                  onChange={(e) => setFormData({ ...formData, relationship_detail: e.target.value })}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl
                     focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                   placeholder="e.g., Daughter, Grandson, Primary Physician"
@@ -205,8 +233,8 @@ const EditContactModal = ({ isOpen, onClose, contact, onUpdate }) => {
                 </label>
                 <input
                   type="tel"
-                  value={formData.phoneNumber}
-                  onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                  value={formData.phone_number}
+                  onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl
                     focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                   placeholder="(555) 123-4567"
@@ -233,8 +261,8 @@ const EditContactModal = ({ isOpen, onClose, contact, onUpdate }) => {
                 </label>
                 <input
                   type="text"
-                  value={formData.visitFrequency}
-                  onChange={(e) => setFormData({ ...formData, visitFrequency: e.target.value })}
+                  value={formData.visit_frequency}
+                  onChange={(e) => setFormData({ ...formData, visit_frequency: e.target.value })}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl
                     focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                   placeholder="e.g., Daily, Weekly, Monthly"
@@ -268,13 +296,13 @@ const EditContactModal = ({ isOpen, onClose, contact, onUpdate }) => {
                 <div>
                   <dt className="text-sm text-gray-500">Relationship</dt>
                   <dd className="text-gray-900 font-medium">
-                    {formData.relationshipDetail || 'Not provided'}
+                    {formData.relationship_detail || 'Not provided'}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-sm text-gray-500">Phone</dt>
                   <dd className="text-gray-900 font-medium">
-                    {formData.phoneNumber || 'Not provided'}
+                    {formData.phone_number || 'Not provided'}
                   </dd>
                 </div>
                 <div>
@@ -284,7 +312,7 @@ const EditContactModal = ({ isOpen, onClose, contact, onUpdate }) => {
                 <div>
                   <dt className="text-sm text-gray-500">Visit Frequency</dt>
                   <dd className="text-gray-900 font-medium">
-                    {formData.visitFrequency || 'Not provided'}
+                    {formData.visit_frequency || 'Not provided'}
                   </dd>
                 </div>
               </dl>
@@ -310,9 +338,10 @@ const EditContactModal = ({ isOpen, onClose, contact, onUpdate }) => {
                 handleSubmit();
               }
             }}
-            className="flex-1 px-6 py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors"
+            disabled={isSubmitting}
+            className="flex-1 px-6 py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {formStep < 4 ? 'Next' : 'Save Changes'}
+            {isSubmitting ? 'Saving...' : (formStep < 4 ? 'Next' : 'Save Changes')}
           </button>
         </div>
       </div>

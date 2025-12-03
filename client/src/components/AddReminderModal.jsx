@@ -1,16 +1,22 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { X, ChevronDown, Clock, Pill, Utensils, Activity, Droplets } from 'lucide-react';
+import { remindersApi } from '../services/api';
+import toast from 'react-hot-toast';
 
-const AddReminderModal = ({ isOpen, onClose, onSave }) => {
+const AddReminderModal = ({ isOpen, onClose, onSave, navigateAfterSave = false }) => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     title: '',
     type: 'medication',
     time: '',
-    recurrence: 'daily'
+    recurrence: 'daily',
+    notes: ''
   });
 
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [showRecurrenceDropdown, setShowRecurrenceDropdown] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const reminderTypes = [
     { value: 'medication', label: 'Medication', icon: Pill },
@@ -26,18 +32,38 @@ const AddReminderModal = ({ isOpen, onClose, onSave }) => {
     { value: 'custom', label: 'Custom' }
   ];
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (onSave) {
-      onSave(formData);
+    setIsSubmitting(true);
+    
+    try {
+      const response = await remindersApi.create(formData);
+      toast.success('Reminder created successfully!');
+      
+      if (onSave) {
+        onSave(response.data);
+      }
+      
+      setFormData({
+        title: '',
+        type: 'medication',
+        time: '',
+        recurrence: 'daily',
+        notes: ''
+      });
+      
+      // Navigate to reminders page if requested (before closing modal)
+      if (navigateAfterSave) {
+        navigate('/dashboard/reminders');
+      }
+      
+      onClose();
+    } catch (error) {
+      console.error('Error creating reminder:', error);
+      toast.error(error.response?.data?.detail || 'Failed to create reminder');
+    } finally {
+      setIsSubmitting(false);
     }
-    setFormData({
-      title: '',
-      type: 'medication',
-      time: '',
-      recurrence: 'daily'
-    });
-    onClose();
   };
 
   if (!isOpen) return null;
@@ -192,9 +218,10 @@ const AddReminderModal = ({ isOpen, onClose, onSave }) => {
             </button>
             <button
               type="submit"
-              className="flex-1 px-6 py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors"
+              disabled={isSubmitting}
+              className="flex-1 px-6 py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Create Reminder
+              {isSubmitting ? 'Creating...' : 'Create Reminder'}
             </button>
           </div>
         </form>

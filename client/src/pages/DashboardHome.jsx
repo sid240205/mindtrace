@@ -21,42 +21,42 @@ const DashboardHome = () => {
   });
   const [loading, setLoading] = useState(true);
 
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch Interactions
+      const interactionsRes = await interactionsApi.getAll({ limit: 3 });
+      setRecentInteractions(interactionsRes.data);
+
+      // Fetch Reminders
+      const remindersRes = await remindersApi.getAll();
+      const reminders = remindersRes.data;
+
+      // Filter for today's reminders (simple check for now, can be improved)
+      // Assuming reminders are daily for MVP or we just show all sorted by time
+      setTodayReminders(reminders.slice(0, 4));
+
+      // Fetch Alerts for stats
+      const alertsRes = await alertsApi.getAll({ limit: 100 }); // Get enough to count unread
+      const unreadCount = alertsRes.data.filter(a => !a.read).length;
+
+      setStats({
+        visitors: 4, // Placeholder for now as we don't have visitor tracking yet
+        conversations: interactionsRes.data.length, // Just using count of fetched for now
+        unreadAlerts: unreadCount,
+        upcomingReminders: reminders.filter(r => !r.completed).length
+      });
+
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+      toast.error("Failed to load dashboard data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-
-        // Fetch Interactions
-        const interactionsRes = await interactionsApi.getAll({ limit: 3 });
-        setRecentInteractions(interactionsRes.data);
-
-        // Fetch Reminders
-        const remindersRes = await remindersApi.getAll();
-        const reminders = remindersRes.data;
-
-        // Filter for today's reminders (simple check for now, can be improved)
-        // Assuming reminders are daily for MVP or we just show all sorted by time
-        setTodayReminders(reminders.slice(0, 4));
-
-        // Fetch Alerts for stats
-        const alertsRes = await alertsApi.getAll({ limit: 100 }); // Get enough to count unread
-        const unreadCount = alertsRes.data.filter(a => !a.read).length;
-
-        setStats({
-          visitors: 4, // Placeholder for now as we don't have visitor tracking yet
-          conversations: interactionsRes.data.length, // Just using count of fetched for now
-          unreadAlerts: unreadCount,
-          upcomingReminders: reminders.filter(r => !r.completed).length
-        });
-
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error);
-        toast.error("Failed to load dashboard data");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
   }, []);
 
@@ -315,10 +315,18 @@ const DashboardHome = () => {
       <AddContactModal
         isOpen={isAddContactModalOpen}
         onClose={() => setIsAddContactModalOpen(false)}
+        onSave={() => {
+          fetchData(); // Refresh dashboard data after adding contact
+        }}
+        navigateAfterSave={true}
       />
       <AddReminderModal
         isOpen={isAddReminderModalOpen}
         onClose={() => setIsAddReminderModalOpen(false)}
+        onSave={() => {
+          fetchData(); // Refresh dashboard data after adding reminder
+        }}
+        navigateAfterSave={true}
       />
     </div>
   );
