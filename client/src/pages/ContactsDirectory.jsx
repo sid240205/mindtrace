@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Search, Grid, List, Plus, X, Upload, Phone, Mail, Trash2, Edit2, Eye } from 'lucide-react';
+import { Search, Grid, List, Plus, Eye } from 'lucide-react';
+import AddContactModal from '../components/AddContactModal';
+import ContactDetailModal from '../components/ContactDetailModal';
 
 const ContactsDirectory = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -143,300 +145,6 @@ const ContactsDirectory = () => {
     }
   };
 
-  const AddContactModal = () => {
-    const [formStep, setFormStep] = useState(1);
-    const [formData, setFormData] = useState({
-      name: '',
-      relationship: 'family',
-      relationshipDetail: '',
-      notes: '',
-      phoneNumber: '',
-      email: '',
-      visitFrequency: '',
-      photos: []
-    });
-
-    return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-        <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
-          <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">Add New Contact</h2>
-            <button
-              onClick={() => setShowAddModal(false)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <X className="h-6 w-6 text-gray-600" />
-            </button>
-          </div>
-
-          {/* Progress Steps */}
-          <div className="px-6 pt-6 pb-4">
-            <div className="flex items-center justify-between">
-              {[1, 2, 3, 4].map((step) => (
-                <div key={step} className="flex items-center flex-1">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold
-                    ${formStep >= step ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-500'}`}>
-                    {step}
-                  </div>
-                  {step < 4 && (
-                    <div className={`flex-1 h-1 mx-2 ${formStep > step ? 'bg-gray-900' : 'bg-gray-200'}`} />
-                  )}
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-between mt-2 text-xs text-gray-600">
-              <span>Basic Info</span>
-              <span>Photos</span>
-              <span>Details</span>
-              <span>Review</span>
-            </div>
-          </div>
-
-          <div className="p-6 overflow-y-auto max-h-[calc(90vh-250px)]">
-            {formStep === 1 && (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">Full Name *</label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl
-                      focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                    placeholder="Enter full name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">Relationship Type *</label>
-                  <select
-                    value={formData.relationship}
-                    onChange={(e) => setFormData({ ...formData, relationship: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl
-                      focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                  >
-                    <option value="family">Family</option>
-                    <option value="friend">Friend</option>
-                    <option value="caretaker">Caretaker</option>
-                    <option value="doctor">Doctor</option>
-                    <option value="nurse">Nurse</option>
-                    <option value="neighbor">Neighbor</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">Specific Relation *</label>
-                  <input
-                    type="text"
-                    value={formData.relationshipDetail}
-                    onChange={(e) => setFormData({ ...formData, relationshipDetail: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl
-                      focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                    placeholder="e.g., Daughter, Grandson, Primary Physician"
-                  />
-                </div>
-              </div>
-            )}
-
-            {formStep === 2 && (
-              <div className="space-y-4">
-                <p className="text-sm text-gray-600 mb-4">
-                  Upload at least 3 photos for better facial recognition accuracy
-                </p>
-                <div className="border-2 border-dashed border-gray-300 rounded-2xl p-12 text-center hover:border-gray-400 transition-colors cursor-pointer">
-                  <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-700 font-medium mb-2">Click to upload photos</p>
-                  <p className="text-sm text-gray-500">or drag and drop</p>
-                  <p className="text-xs text-gray-400 mt-2">PNG, JPG up to 10MB each</p>
-                </div>
-              </div>
-            )}
-
-            {formStep === 3 && (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">Phone Number</label>
-                  <input
-                    type="tel"
-                    value={formData.phoneNumber}
-                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl
-                      focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                    placeholder="(555) 123-4567"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">Email</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl
-                      focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                    placeholder="email@example.com"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">Visit Frequency</label>
-                  <input
-                    type="text"
-                    value={formData.visitFrequency}
-                    onChange={(e) => setFormData({ ...formData, visitFrequency: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl
-                      focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                    placeholder="e.g., Daily, Weekly, Monthly"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">Notes</label>
-                  <textarea
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    rows={4}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl
-                      focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none"
-                    placeholder="Any additional information..."
-                  />
-                </div>
-              </div>
-            )}
-
-            {formStep === 4 && (
-              <div className="bg-gray-50 rounded-2xl p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Review Information</h3>
-                <dl className="space-y-3">
-                  <div>
-                    <dt className="text-sm text-gray-500">Name</dt>
-                    <dd className="text-gray-900 font-medium">{formData.name || 'Not provided'}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-gray-500">Relationship</dt>
-                    <dd className="text-gray-900 font-medium">{formData.relationshipDetail || 'Not provided'}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-gray-500">Phone</dt>
-                    <dd className="text-gray-900 font-medium">{formData.phoneNumber || 'Not provided'}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-gray-500">Email</dt>
-                    <dd className="text-gray-900 font-medium">{formData.email || 'Not provided'}</dd>
-                  </div>
-                </dl>
-              </div>
-            )}
-          </div>
-
-          <div className="p-6 border-t border-gray-200 flex gap-3">
-            {formStep > 1 && (
-              <button
-                onClick={() => setFormStep(formStep - 1)}
-                className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
-              >
-                Back
-              </button>
-            )}
-            <button
-              onClick={() => {
-                if (formStep < 4) {
-                  setFormStep(formStep + 1);
-                } else {
-                  setShowAddModal(false);
-                  alert('Contact added successfully!');
-                }
-              }}
-              className="flex-1 px-6 py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors"
-            >
-              {formStep < 4 ? 'Next' : 'Add Contact'}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const ContactDetailModal = ({ contact }) => (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-      <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className={`w-16 h-16 rounded-full bg-gradient-to-br from-${contact.color}-400 to-${contact.color}-600 flex items-center justify-center text-white font-semibold text-xl`}>
-              {contact.avatar}
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">{contact.name}</h2>
-              <p className="text-gray-500">{contact.relationshipDetail}</p>
-            </div>
-          </div>
-          <button
-            onClick={() => setShowDetailModal(false)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <X className="h-6 w-6 text-gray-600" />
-          </button>
-        </div>
-
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
-            <div className="bg-gray-50 rounded-xl p-4">
-              <p className="text-xs text-gray-500 mb-1">Last Seen</p>
-              <p className="font-semibold text-gray-900">{formatLastSeen(contact.lastSeen)}</p>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-4">
-              <p className="text-xs text-gray-500 mb-1">Total Interactions</p>
-              <p className="font-semibold text-gray-900">{contact.totalInteractions}</p>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-4">
-              <p className="text-xs text-gray-500 mb-1">Visit Frequency</p>
-              <p className="font-semibold text-gray-900">{contact.visitFrequency}</p>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-4">
-              <p className="text-xs text-gray-500 mb-1">Status</p>
-              <span className="inline-flex px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-lg">
-                Active
-              </span>
-            </div>
-          </div>
-
-          {(contact.phoneNumber || contact.email) && (
-            <div className="mb-6">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Contact Information</h3>
-              <div className="space-y-3">
-                {contact.phoneNumber && (
-                  <div className="flex items-center gap-3">
-                    <Phone className="h-5 w-5 text-gray-400" />
-                    <span className="text-gray-700">{contact.phoneNumber}</span>
-                  </div>
-                )}
-                {contact.email && (
-                  <div className="flex items-center gap-3">
-                    <Mail className="h-5 w-5 text-gray-400" />
-                    <span className="text-gray-700">{contact.email}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {contact.notes && (
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Notes</h3>
-              <p className="text-gray-700 leading-relaxed bg-gray-50 rounded-xl p-4">{contact.notes}</p>
-            </div>
-          )}
-        </div>
-
-        <div className="p-6 border-t border-gray-200 flex gap-3">
-          <button className="flex-1 px-6 py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
-            <Edit2 className="h-5 w-5" />
-            Edit Contact
-          </button>
-          <button className="px-6 py-3 border border-red-300 text-red-700 rounded-xl font-medium hover:bg-red-50 transition-colors flex items-center gap-2">
-            <Trash2 className="h-5 w-5" />
-            Delete
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <div className="p-6 lg:p-8 max-w-[1600px] mx-auto">
       {/* Header */}
@@ -521,15 +229,15 @@ const ContactsDirectory = () => {
           {filteredContacts.map((contact) => (
             <div
               key={contact.id}
-              className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg
-                transition-all duration-300 cursor-pointer group"
               onClick={() => {
                 setSelectedContact(contact);
                 setShowDetailModal(true);
               }}
+              className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg
+                transition-all duration-300 cursor-pointer group"
             >
               <div className="flex flex-col items-center text-center mb-4">
-                <div className={`w-20 h-20 rounded-full bg-gradient-to-br from-${contact.color}-400 to-${contact.color}-600 flex items-center justify-center text-white font-semibold text-2xl mb-4`}>
+                <div className={`w-20 h-20 rounded-full bg-linear-to-br from-${contact.color}-400 to-${contact.color}-600 flex items-center justify-center text-white font-semibold text-2xl mb-4`}>
                   {contact.avatar}
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
@@ -562,15 +270,15 @@ const ContactsDirectory = () => {
           {filteredContacts.map((contact) => (
             <div
               key={contact.id}
-              className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg
-                transition-all duration-300 cursor-pointer group"
               onClick={() => {
                 setSelectedContact(contact);
                 setShowDetailModal(true);
               }}
+              className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg
+                transition-all duration-300 cursor-pointer group"
             >
               <div className="flex items-center gap-4">
-                <div className={`w-14 h-14 rounded-full bg-gradient-to-br from-${contact.color}-400 to-${contact.color}-600 flex items-center justify-center text-white font-semibold text-lg flex-shrink-0`}>
+                <div className={`w-14 h-14 rounded-full bg-linear-to-br from-${contact.color}-400 to-${contact.color}-600 flex items-center justify-center text-white font-semibold text-lg shrink-0`}>
                   {contact.avatar}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -607,8 +315,16 @@ const ContactsDirectory = () => {
       )}
 
       {/* Modals */}
-      {showAddModal && <AddContactModal />}
-      {showDetailModal && selectedContact && <ContactDetailModal contact={selectedContact} />}
+      {showAddModal && <AddContactModal onClose={() => setShowAddModal(false)} />}
+      {showDetailModal && selectedContact && (
+        <ContactDetailModal
+          contact={selectedContact}
+          onClose={() => {
+            setShowDetailModal(false);
+            setSelectedContact(null);
+          }}
+        />
+      )}
     </div>
   );
 };

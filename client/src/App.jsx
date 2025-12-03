@@ -1,18 +1,21 @@
-import { Route, Routes } from 'react-router'
+import { Routes, Route } from 'react-router'
 import { Toaster } from 'react-hot-toast'
+
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import AuthCallback from './pages/AuthCallback'
+
 import DashboardLayout from './components/DashboardLayout'
 import DashboardHome from './pages/DashboardHome'
 import InteractionHistory from './pages/InteractionHistory'
 import ContactsDirectory from './pages/ContactsDirectory'
 import AlertsNotifications from './pages/AlertsNotifications'
-import RemindersCalendar from './pages/RemindersCalendar'
+import Reminders from './pages/Reminders'
 import SOSSettings from './pages/SOSSettings'
 import ProfileSettings from './pages/ProfileSettings'
 import HelpSupport from './pages/HelpSupport'
+
 import ProtectedRoute from './components/ProtectedRoute'
 import PublicRoute from './components/PublicRoute'
 
@@ -21,22 +24,36 @@ const App = () => {
     <>
       <Routes>
         <Route path='/' element={<Landing />} />
+
         <Route path='/login' element={<PublicRoute><Login /></PublicRoute>} />
         <Route path='/signup' element={<PublicRoute><Signup /></PublicRoute>} />
         <Route path='/auth/callback' element={<AuthCallback />} />
-        
-        <Route path='/dashboard' element={<ProtectedRoute><DashboardLayout><DashboardHome /></DashboardLayout></ProtectedRoute>} />
-        <Route path='/dashboard/interactions' element={<ProtectedRoute><DashboardLayout><InteractionHistory /></DashboardLayout></ProtectedRoute>} />
-        <Route path='/dashboard/contacts' element={<ProtectedRoute><DashboardLayout><ContactsDirectory /></DashboardLayout></ProtectedRoute>} />
-        <Route path='/dashboard/alerts' element={<ProtectedRoute><DashboardLayout><AlertsNotifications /></DashboardLayout></ProtectedRoute>} />
-        <Route path='/dashboard/reminders' element={<ProtectedRoute><DashboardLayout><RemindersCalendar /></DashboardLayout></ProtectedRoute>} />
-        <Route path='/dashboard/sos' element={<ProtectedRoute><DashboardLayout><SOSSettings /></DashboardLayout></ProtectedRoute>} />
-        <Route path='/dashboard/settings' element={<ProtectedRoute><DashboardLayout><ProfileSettings /></DashboardLayout></ProtectedRoute>} />
-        <Route path='/dashboard/help' element={<ProtectedRoute><DashboardLayout><HelpSupport /></DashboardLayout></ProtectedRoute>} />
+
+        {/* Dashboard parent route */}
+        <Route 
+          path='/dashboard' 
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
+          {/* Nested dashboard pages */}
+          <Route index element={<DashboardHome />} />
+          <Route path='interactions' element={<InteractionHistory />} />
+          <Route path='contacts' element={<ContactsDirectory />} />
+          <Route path='alerts' element={<AlertsNotifications />} />
+          <Route path='reminders' element={<Reminders />} />
+          <Route path='sos' element={<SOSSettings />} />
+          <Route path='settings' element={<ProfileSettings />} />
+          <Route path='help' element={<HelpSupport />} />
+        </Route>
       </Routes>
+
       <Toaster position="top-right" />
     </>
   )
 }
 
-export default App
+export default App;
+

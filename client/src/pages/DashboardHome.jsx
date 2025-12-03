@@ -1,8 +1,13 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Users, Bell, Calendar, TrendingUp, Activity, Plus, ArrowRight, AlertCircle, Phone } from 'lucide-react';
+import { Users, Bell, Calendar, TrendingUp, Activity, Plus, ArrowRight, AlertCircle } from 'lucide-react';
+import AddContactModal from '../components/AddContactModal';
+import AddReminderModal from '../components/AddReminderModal';
 
 const DashboardHome = () => {
   const navigate = useNavigate();
+  const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false);
+  const [isAddReminderModalOpen, setIsAddReminderModalOpen] = useState(false);
 
   const recentInteractions = [
     {
@@ -69,7 +74,7 @@ const DashboardHome = () => {
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <button
-            onClick={() => navigate('/dashboard/contacts')}
+            onClick={() => setIsAddContactModalOpen(true)}
             className="flex flex-col items-center gap-3 p-4 rounded-xl border border-gray-200 
               hover:border-gray-300 hover:bg-gray-50 transition-all group"
           >
@@ -81,7 +86,7 @@ const DashboardHome = () => {
           </button>
           
           <button
-            onClick={() => navigate('/dashboard/reminders')}
+            onClick={() => setIsAddReminderModalOpen(true)}
             className="flex flex-col items-center gap-3 p-4 rounded-xl border border-gray-200 
               hover:border-gray-300 hover:bg-gray-50 transition-all group"
           >
@@ -273,6 +278,16 @@ const DashboardHome = () => {
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <AddContactModal 
+        isOpen={isAddContactModalOpen}
+        onClose={() => setIsAddContactModalOpen(false)}
+      />
+      <AddReminderModal 
+        isOpen={isAddReminderModalOpen}
+        onClose={() => setIsAddReminderModalOpen(false)}
+      />
     </div>
   );
 };

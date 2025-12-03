@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router';
+import { useLocation, Outlet } from 'react-router';
 import Sidebar from './Sidebar';
 import DashboardHeader from './DashboardHeader';
 
-const DashboardLayout = ({ children }) => {
+const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const mainRef = useRef(null);
   const location = useLocation();
@@ -23,7 +23,7 @@ const DashboardLayout = ({ children }) => {
         <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />
 
         <main ref={mainRef} className="flex-1 overflow-auto">
-          {children}
+          <Outlet />
         </main>
       </div>
     </div>

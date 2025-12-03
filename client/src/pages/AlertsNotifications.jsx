@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, AlertCircle, Info, AlertTriangle, CheckCircle, X, Filter } from 'lucide-react';
+import { Bell, AlertCircle, Info, AlertTriangle, X, Filter } from 'lucide-react';
 
 const AlertsNotifications = () => {
   const [selectedSeverity, setSelectedSeverity] = useState('all');
@@ -73,23 +73,26 @@ const AlertsNotifications = () => {
       info: {
         icon: Info,
         color: 'blue',
-        bg: 'bg-blue-100',
-        text: 'text-blue-700',
-        border: 'border-blue-200'
+        bg: 'bg-blue-500',
+        text: 'text-white',
+        border: 'border-blue-400',
+        cardBg: 'bg-blue-50'
       },
       warning: {
         icon: AlertTriangle,
         color: 'yellow',
-        bg: 'bg-yellow-100',
-        text: 'text-yellow-700',
-        border: 'border-yellow-200'
+        bg: 'bg-amber-500',
+        text: 'text-white',
+        border: 'border-amber-400',
+        cardBg: 'bg-amber-50'
       },
       critical: {
         icon: AlertCircle,
         color: 'red',
-        bg: 'bg-red-100',
-        text: 'text-red-700',
-        border: 'border-red-200'
+        bg: 'bg-red-500',
+        text: 'text-white',
+        border: 'border-red-400',
+        cardBg: 'bg-red-50'
       }
     };
     return configs[severity] || configs.info;
@@ -138,14 +141,14 @@ const AlertsNotifications = () => {
                 className={`px-4 py-2 rounded-xl font-medium transition-all ${
                   selectedSeverity === severity
                     ? 'bg-gray-900 text-white'
-                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                    : 'bg-gray-50 text-gray-600'
                 }`}
               >
                 {severity.charAt(0).toUpperCase() + severity.slice(1)}
               </button>
             ))}
           </div>
-          <button className="ml-auto text-sm font-medium text-indigo-600 hover:text-indigo-700">
+          <button className="ml-auto text-sm font-medium text-indigo-600">
             Mark All as Read
           </button>
         </div>
@@ -160,20 +163,26 @@ const AlertsNotifications = () => {
           return (
             <div
               key={alert.id}
-              className={`bg-white rounded-2xl border-2 p-6 transition-all duration-300 cursor-pointer hover:shadow-lg ${
-                alert.read ? 'border-gray-200 opacity-60 hover:opacity-100' : `${config.border}`
+              className={`rounded-2xl border-2 p-6 cursor-pointer transition-all hover:shadow-lg ${
+                alert.read 
+                  ? 'bg-white border-gray-200' 
+                  : `${config.cardBg} ${config.border} shadow-md`
               }`}
               onClick={() => setSelectedAlert(alert)}
             >
               <div className="flex items-start gap-4">
-                <div className={`${config.bg} ${config.text} w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0`}>
+                <div className={`${config.bg} ${config.text} w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm`}>
                   <Icon className="h-6 w-6" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <h3 className="font-semibold text-gray-900">{alert.title}</h3>
-                      <p className="text-sm text-gray-600 mt-1">{alert.message}</p>
+                      <h3 className={`font-semibold ${alert.read ? 'text-gray-600' : 'text-gray-900'}`}>
+                        {alert.title}
+                      </h3>
+                      <p className={`text-sm mt-1 ${alert.read ? 'text-gray-500' : 'text-gray-700'}`}>
+                        {alert.message}
+                      </p>
                     </div>
                     {!alert.read && (
                       <div className="w-2 h-2 bg-indigo-600 rounded-full ml-4" />
@@ -195,7 +204,7 @@ const AlertsNotifications = () => {
               <h2 className="text-2xl font-bold text-gray-900">{selectedAlert.title}</h2>
               <button
                 onClick={() => setSelectedAlert(null)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <X className="h-6 w-6 text-gray-600" />
               </button>
