@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router';
-import { Clock, Users, Bell, Calendar, TrendingUp, Activity, Plus, ArrowRight, AlertCircle, Phone } from 'lucide-react';
+import { Users, Bell, Calendar, TrendingUp, Activity, Plus, ArrowRight, AlertCircle, Phone } from 'lucide-react';
 
 const DashboardHome = () => {
   const navigate = useNavigate();
@@ -199,7 +199,7 @@ const DashboardHome = () => {
                 onClick={() => navigate('/dashboard/interactions')}
               >
                 <div className="flex items-start gap-4">
-                  <div className={`w-12 h-12 rounded-full ${interaction.bgColor} flex items-center justify-center text-white font-semibold flex-shrink-0`}>
+                  <div className={`w-12 h-12 rounded-full ${interaction.bgColor} flex items-center justify-center text-white font-semibold shrink-0`}>
                     {interaction.avatar}
                   </div>
                   <div className="flex-1 min-w-0">

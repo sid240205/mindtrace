@@ -11,6 +11,8 @@ import ContactsDirectory from './pages/ContactsDirectory'
 import AlertsNotifications from './pages/AlertsNotifications'
 import RemindersCalendar from './pages/RemindersCalendar'
 import SOSSettings from './pages/SOSSettings'
+import ProfileSettings from './pages/ProfileSettings'
+import HelpSupport from './pages/HelpSupport'
 import ProtectedRoute from './components/ProtectedRoute'
 import PublicRoute from './components/PublicRoute'
 
@@ -29,6 +31,8 @@ const App = () => {
         <Route path='/dashboard/alerts' element={<ProtectedRoute><DashboardLayout><AlertsNotifications /></DashboardLayout></ProtectedRoute>} />
         <Route path='/dashboard/reminders' element={<ProtectedRoute><DashboardLayout><RemindersCalendar /></DashboardLayout></ProtectedRoute>} />
         <Route path='/dashboard/sos' element={<ProtectedRoute><DashboardLayout><SOSSettings /></DashboardLayout></ProtectedRoute>} />
+        <Route path='/dashboard/settings' element={<ProtectedRoute><DashboardLayout><ProfileSettings /></DashboardLayout></ProtectedRoute>} />
+        <Route path='/dashboard/help' element={<ProtectedRoute><DashboardLayout><HelpSupport /></DashboardLayout></ProtectedRoute>} />
       </Routes>
       <Toaster position="top-right" />
     </>

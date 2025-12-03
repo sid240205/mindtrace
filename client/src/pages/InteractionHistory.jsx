@@ -227,7 +227,7 @@ const InteractionHistory = () => {
             <div className="p-6">
               <div className="flex items-start gap-4">
                 {/* Avatar */}
-                <div className={`w-14 h-14 rounded-full bg-gradient-to-br from-${interaction.color}-400 to-${interaction.color}-600 flex items-center justify-center text-white font-semibold text-lg flex-shrink-0`}>
+                <div className={`w-14 h-14 rounded-full bg-linear-to-br from-${interaction.color}-400 to-${interaction.color}-600 flex items-center justify-center text-white font-semibold text-lg shrink-0`}>
                   {interaction.avatar}
                 </div>
 
@@ -304,7 +304,7 @@ const InteractionHistory = () => {
           <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
             <div className="p-6 border-b border-gray-200 flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className={`w-14 h-14 rounded-full bg-gradient-to-br from-${selectedInteraction.color}-400 to-${selectedInteraction.color}-600 flex items-center justify-center text-white font-semibold text-lg`}>
+                <div className={`w-14 h-14 rounded-full bg-linear-to-br from-${selectedInteraction.color}-400 to-${selectedInteraction.color}-600 flex items-center justify-center text-white font-semibold text-lg`}>
                   {selectedInteraction.avatar}
                 </div>
                 <div>

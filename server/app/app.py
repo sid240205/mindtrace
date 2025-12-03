@@ -10,7 +10,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from .database import Base, engine
 from .routes.authRoutes import router as auth_router
-from .routers.face_routes import router as face_router
+from .routes.faceRoutes import router as face_router
 
 CLIENT_URL = os.getenv("CLIENT_URL", "http://localhost:5173")
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-should-be-in-env")
