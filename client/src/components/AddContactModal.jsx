@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { X, Upload } from 'lucide-react';
 import { contactsApi } from '../services/api';
 import toast from 'react-hot-toast';
