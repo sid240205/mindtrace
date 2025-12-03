@@ -10,7 +10,7 @@ const DashboardHome = () => {
   const navigate = useNavigate();
   const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false);
   const [isAddReminderModalOpen, setIsAddReminderModalOpen] = useState(false);
-  
+
   const [recentInteractions, setRecentInteractions] = useState([]);
   const [todayReminders, setTodayReminders] = useState([]);
   const [stats, setStats] = useState({
@@ -25,19 +25,19 @@ const DashboardHome = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
+
         // Fetch Interactions
         const interactionsRes = await interactionsApi.getAll({ limit: 3 });
         setRecentInteractions(interactionsRes.data);
-        
+
         // Fetch Reminders
         const remindersRes = await remindersApi.getAll();
         const reminders = remindersRes.data;
-        
+
         // Filter for today's reminders (simple check for now, can be improved)
         // Assuming reminders are daily for MVP or we just show all sorted by time
         setTodayReminders(reminders.slice(0, 4));
-        
+
         // Fetch Alerts for stats
         const alertsRes = await alertsApi.getAll({ limit: 100 }); // Get enough to count unread
         const unreadCount = alertsRes.data.filter(a => !a.read).length;
@@ -77,7 +77,7 @@ const DashboardHome = () => {
     const now = new Date();
     const diffMs = now - date;
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    
+
     if (diffHours < 24) {
       return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
     } else {
@@ -112,7 +112,7 @@ const DashboardHome = () => {
             </div>
             <span className="text-sm font-medium text-gray-900">Add Contact</span>
           </button>
-          
+
           <button
             onClick={() => setIsAddReminderModalOpen(true)}
             className="flex flex-col items-center gap-3 p-4 rounded-xl border border-gray-200 
@@ -124,7 +124,7 @@ const DashboardHome = () => {
             </div>
             <span className="text-sm font-medium text-gray-900">New Reminder</span>
           </button>
-          
+
           <button
             onClick={() => navigate('/dashboard/alerts')}
             className="flex flex-col items-center gap-3 p-4 rounded-xl border border-gray-200 
@@ -136,7 +136,7 @@ const DashboardHome = () => {
             </div>
             <span className="text-sm font-medium text-gray-900">View Alerts</span>
           </button>
-          
+
           <button
             onClick={() => navigate('/dashboard/sos')}
             className="flex flex-col items-center gap-3 p-4 rounded-xl border-2 border-red-200 
@@ -158,10 +158,6 @@ const DashboardHome = () => {
             <div className="bg-indigo-100 text-indigo-600 w-12 h-12 rounded-xl flex items-center justify-center">
               <Users className="h-6 w-6" />
             </div>
-            <span className="flex items-center gap-1 text-sm font-semibold text-emerald-600">
-              <TrendingUp className="h-4 w-4" />
-              +2
-            </span>
           </div>
           <div>
             <p className="text-3xl font-bold text-gray-900 mb-1">{stats.visitors}</p>
@@ -174,10 +170,6 @@ const DashboardHome = () => {
             <div className="bg-purple-100 text-purple-600 w-12 h-12 rounded-xl flex items-center justify-center">
               <Activity className="h-6 w-6" />
             </div>
-            <span className="flex items-center gap-1 text-sm font-semibold text-emerald-600">
-              <TrendingUp className="h-4 w-4" />
-              +5
-            </span>
           </div>
           <div>
             <p className="text-3xl font-bold text-gray-900 mb-1">{stats.conversations}</p>
@@ -320,11 +312,11 @@ const DashboardHome = () => {
       </div>
 
       {/* Modals */}
-      <AddContactModal 
+      <AddContactModal
         isOpen={isAddContactModalOpen}
         onClose={() => setIsAddContactModalOpen(false)}
       />
-      <AddReminderModal 
+      <AddReminderModal
         isOpen={isAddReminderModalOpen}
         onClose={() => setIsAddReminderModalOpen(false)}
       />
