@@ -68,7 +68,7 @@ const Login = () => {
             </p>
           </div>
 
-          <form className="mt-8 space-y-6" onSubmit={(e) => e.preventDefault()}>
+          <form className="mt-8 space-y-6" onSubmit={(e) => { e.preventDefault(); navigate('/dashboard'); }}>
             <div className="space-y-5">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
