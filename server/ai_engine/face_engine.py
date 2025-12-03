@@ -98,12 +98,13 @@ def recognize_face(app, image, threshold=0.45):
     """
     Compare input face embedding to stored embeddings using cosine similarity.
     """
-    # Get embedding for the current input
+    # Get embedding and bbox for the current input
     result = detect_and_embed(app, image)
     if not result:
         return None
 
     current_emb = result["embedding"]
+    current_bbox = result["bbox"]
 
     # Load stored profiles
     try:
@@ -125,12 +126,18 @@ def recognize_face(app, image, threshold=0.45):
             best_match = profile
 
     if best_score < threshold:
-        return {"name": "Unknown", "relation": "Unknown", "confidence": float(best_score)}
+        return {
+            "name": "Unknown", 
+            "relation": "Unknown", 
+            "confidence": float(best_score),
+            "bbox": current_bbox
+        }
 
     result = {
         "name": best_match["name"],
         "relation": best_match["relation"],
-        "confidence": float(best_score)
+        "confidence": float(best_score),
+        "bbox": current_bbox
     }
     
     # Include contact_id if available

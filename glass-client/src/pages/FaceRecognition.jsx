@@ -56,6 +56,43 @@ const FaceRecognition = () => {
         return null;
     };
 
+    const calculatePosition = (bbox) => {
+        if (!videoRef.current || !bbox) return null;
+
+        const video = videoRef.current;
+        const videoWidth = video.videoWidth;
+        const videoHeight = video.videoHeight;
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+
+        // Calculate scale to maintain aspect ratio (object-cover)
+        const scale = Math.max(screenWidth / videoWidth, screenHeight / videoHeight);
+
+        const scaledWidth = videoWidth * scale;
+        const scaledHeight = videoHeight * scale;
+
+        const xOffset = (screenWidth - scaledWidth) / 2;
+        const yOffset = (screenHeight - scaledHeight) / 2;
+
+        // bbox is [x1, y1, x2, y2]
+        const [x1, y1, x2, y2] = bbox;
+
+        // Map to screen coordinates
+        const screenX = x1 * scale + xOffset;
+        const screenY = y1 * scale + yOffset;
+        const screenW = (x2 - x1) * scale;
+        const screenH = (y2 - y1) * scale;
+
+        return {
+            left: screenX,
+            top: screenY,
+            width: screenW,
+            height: screenH
+        };
+    };
+
+    const timeoutRef = useRef(null);
+
     const startRecognitionLoop = () => {
         if (intervalRef.current) clearInterval(intervalRef.current);
 
@@ -71,14 +108,26 @@ const FaceRecognition = () => {
             try {
                 const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/face/recognize`, formData);
                 if (response.data && response.data.name !== "Unknown") {
-                    setRecognitionResult(response.data);
-                    // Clear result after 3 seconds if no new detection
-                    setTimeout(() => setRecognitionResult(null), 3000);
+                    const result = response.data;
+                    if (result.bbox) {
+                        result.position = calculatePosition(result.bbox);
+                    }
+
+                    // Clear any pending timeout to hide the result
+                    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+                    setRecognitionResult(result);
+
+                    // Set a new timeout to clear the result if no new detection occurs
+                    timeoutRef.current = setTimeout(() => {
+                        setRecognitionResult(null);
+                        timeoutRef.current = null;
+                    }, 2000);
                 }
             } catch (err) {
                 // console.error("Recognition error", err);
             }
-        }, 1000);
+        }, 200); // Increased frequency for smoother tracking (5fps)
     };
 
     return (
@@ -101,8 +150,8 @@ const FaceRecognition = () => {
                 <button
                     onClick={() => setMode('standard')}
                     className={`p-4 rounded-full backdrop-blur-md border transition-all ${mode === 'standard'
-                            ? 'bg-white/20 border-white text-white shadow-[0_0_15px_rgba(255,255,255,0.3)]'
-                            : 'bg-black/40 border-white/10 text-white/60 hover:bg-black/60'
+                        ? 'bg-white/20 border-white text-white shadow-[0_0_15px_rgba(255,255,255,0.3)]'
+                        : 'bg-black/40 border-white/10 text-white/60 hover:bg-black/60'
                         }`}
                     title="Standard View"
                 >
@@ -112,8 +161,8 @@ const FaceRecognition = () => {
                 <button
                     onClick={() => setMode('rayban')}
                     className={`p-4 rounded-full backdrop-blur-md border transition-all ${mode === 'rayban'
-                            ? 'bg-white/20 border-white text-white shadow-[0_0_15px_rgba(255,255,255,0.3)]'
-                            : 'bg-black/40 border-white/10 text-white/60 hover:bg-black/60'
+                        ? 'bg-white/20 border-white text-white shadow-[0_0_15px_rgba(255,255,255,0.3)]'
+                        : 'bg-black/40 border-white/10 text-white/60 hover:bg-black/60'
                         }`}
                     title="Ray-Ban Meta Mode"
                 >

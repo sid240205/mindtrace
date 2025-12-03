@@ -9,6 +9,46 @@ const HUDOverlay = ({ mode, recognitionResult }) => {
         return () => clearInterval(timer);
     }, []);
 
+    // Helper to get style for tracking tag
+    const getTagStyle = () => {
+        if (!recognitionResult?.position) {
+            // Fallback to center bottom if no position (shouldn't happen often with tracking)
+            return {
+                position: 'absolute',
+                bottom: '10%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                transition: 'all 0.2s ease-out' // Smooth transition for tracking
+            };
+        }
+
+        const { left, top, width, height } = recognitionResult.position;
+
+        // Position the tag slightly above or below the face box
+        // Let's place it to the right of the face for a futuristic/AR look, or below.
+        // User asked for "tag on the recognition". Let's place it floating near the face.
+
+        return {
+            position: 'absolute',
+            left: `${left + width + 20}px`, // 20px to the right of the face
+            top: `${top}px`, // Aligned with top of face
+            transition: 'all 0.1s linear' // Fast transition for smooth tracking
+        };
+    };
+
+    const TagContent = () => (
+        <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-lg shadow-lg text-white">
+            <div className="flex flex-col">
+                <span className="text-xs font-serif tracking-widest uppercase opacity-70 mb-1">Identified</span>
+                <h1 className="text-xl font-serif font-bold leading-tight">{recognitionResult.name}</h1>
+                <span className="text-sm font-sans opacity-90 mt-1">{recognitionResult.relation}</span>
+            </div>
+            {/* Connecting Line */}
+            <div className="absolute top-4 -left-5 w-5 h-px bg-white/30" />
+            <div className="absolute top-4 -left-1 w-1 h-1 bg-white rounded-full" />
+        </div>
+    );
+
     if (mode === 'standard') {
         return (
             <div className="absolute inset-0 pointer-events-none p-8 flex flex-col justify-between">
@@ -25,21 +65,10 @@ const HUDOverlay = ({ mode, recognitionResult }) => {
                     </div>
                 </div>
 
-                {/* Bottom Bar - Recognition Result */}
+                {/* Tracking Tag */}
                 {recognitionResult && (
-                    <div className="self-center mb-12">
-                        <div className="bg-white/95 backdrop-blur-xl border border-gray-200 p-8 rounded-xl shadow-2xl max-w-md w-full animate-in slide-in-from-bottom-10 fade-in duration-500 text-gray-900">
-                            <div className="flex items-center justify-between mb-3">
-                                <span className="text-gray-500 text-xs font-serif tracking-widest uppercase">Identified</span>
-                                <span className="text-gray-400 text-xs font-serif">{recognitionResult.confidence ? (recognitionResult.confidence * 100).toFixed(1) + '%' : ''} Match</span>
-                            </div>
-                            <h1 className="text-4xl font-serif font-bold text-gray-900 mb-2">{recognitionResult.name}</h1>
-                            <div className="flex items-center gap-2">
-                                <span className="px-3 py-1 rounded-full bg-gray-100 text-gray-600 text-sm font-medium border border-gray-200">
-                                    {recognitionResult.relation}
-                                </span>
-                            </div>
-                        </div>
+                    <div style={getTagStyle()}>
+                        <TagContent />
                     </div>
                 )}
             </div>
@@ -72,14 +101,16 @@ const HUDOverlay = ({ mode, recognitionResult }) => {
                 <div className="w-2 h-2 bg-white rounded-full shadow-lg" />
             </div>
 
-            {/* Recognition Result - Minimal */}
+            {/* Tracking Tag - Minimal for Ray-Ban */}
             {recognitionResult && (
-                <div className="absolute top-1/2 left-1/2 translate-x-12 -translate-y-1/2">
-                    <div className="bg-black/60 backdrop-blur-md p-4 rounded-lg border border-white/20 text-white shadow-xl">
-                        <div className="text-xl font-serif font-bold">{recognitionResult.name}</div>
+                <div style={getTagStyle()}>
+                    <div className="bg-black/40 backdrop-blur-md p-3 rounded-lg border border-white/20 text-white shadow-xl">
+                        <div className="text-lg font-serif font-bold">{recognitionResult.name}</div>
                         <div className="text-sm font-serif opacity-80">{recognitionResult.relation}</div>
                     </div>
-                    <div className="w-12 h-px bg-white/40 absolute top-1/2 right-full" />
+                    {/* Connecting Line */}
+                    <div className="absolute top-1/2 -left-8 w-8 h-px bg-white/30" />
+                    <div className="absolute top-1/2 -left-1 w-1 h-1 bg-white rounded-full" />
                 </div>
             )}
         </div>
