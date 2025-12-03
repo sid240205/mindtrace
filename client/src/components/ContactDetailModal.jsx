@@ -1,6 +1,11 @@
+import { useState } from 'react';
 import { X, Phone, Mail, Edit2, Trash2 } from 'lucide-react';
+import DeleteConfirmationModal from './DeleteConfirmationModal';
+import { contactsApi } from '../services/api';
+import toast from 'react-hot-toast';
 
 const ContactDetailModal = ({ contact, onClose, onEdit }) => {
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const formatLastSeen = (timestamp) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -23,12 +28,16 @@ const ContactDetailModal = ({ contact, onClose, onEdit }) => {
     }
   };
 
-  const handleDelete = () => {
-    // TODO: Implement delete functionality
-    if (window.confirm(`Are you sure you want to delete ${contact.name}?`)) {
-      console.log('Delete contact:', contact);
+  const handleDelete = async () => {
+    try {
+      await contactsApi.delete(contact.id);
+      toast.success("Contact deleted successfully");
       onClose();
-      alert('Contact deleted successfully!');
+      // Trigger a refresh in the parent component
+      window.location.reload();
+    } catch (error) {
+      console.error("Error deleting contact:", error);
+      toast.error("Failed to delete contact");
     }
   };
 
@@ -117,13 +126,24 @@ const ContactDetailModal = ({ contact, onClose, onEdit }) => {
             Edit Contact
           </button>
           <button
-            onClick={handleDelete}
+            onClick={() => setShowDeleteModal(true)}
             className="px-6 py-3 border border-red-300 text-red-700 rounded-xl font-medium hover:bg-red-50 transition-colors flex items-center gap-2"
           >
             <Trash2 className="h-5 w-5" />
             Delete
           </button>
         </div>
+
+        {/* Delete Confirmation Modal */}
+        <DeleteConfirmationModal
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={handleDelete}
+          title="Delete Contact"
+          message="Are you sure you want to delete this contact? This will remove them from the recognition database and all associated data."
+          itemName={contact.name}
+          confirmText="Delete Contact"
+        />
       </div>
     </div>
   );

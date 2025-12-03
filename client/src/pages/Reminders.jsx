@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Calendar, Clock, CheckCircle2, Circle, Trash2, Edit2, Filter } from 'lucide-react';
 import AddReminderModal from '../components/AddReminderModal';
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import { remindersApi } from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -9,6 +10,7 @@ const Reminders = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, reminderId: null, reminderTitle: '' });
 
   const fetchReminders = async () => {
     try {
@@ -42,16 +44,14 @@ const Reminders = () => {
     }
   };
 
-  const handleDeleteReminder = async (id) => {
-    if (window.confirm('Are you sure you want to delete this reminder?')) {
-      try {
-        await remindersApi.delete(id);
-        setReminders(reminders.filter(reminder => reminder.id !== id));
-        toast.success("Reminder deleted");
-      } catch (error) {
-        console.error("Error deleting reminder:", error);
-        toast.error("Failed to delete reminder");
-      }
+  const handleDeleteReminder = async () => {
+    try {
+      await remindersApi.delete(deleteModal.reminderId);
+      setReminders(reminders.filter(reminder => reminder.id !== deleteModal.reminderId));
+      toast.success("Reminder deleted");
+    } catch (error) {
+      console.error("Error deleting reminder:", error);
+      toast.error("Failed to delete reminder");
     }
   };
 
@@ -136,7 +136,7 @@ const Reminders = () => {
             </h3>
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <button 
-                onClick={() => handleDeleteReminder(reminder.id)}
+                onClick={() => setDeleteModal({ isOpen: true, reminderId: reminder.id, reminderTitle: reminder.title })}
                 className="p-1 text-gray-400 hover:text-red-500 transition-colors"
               >
                 <Trash2 className="h-4 w-4" />
@@ -292,6 +292,17 @@ const Reminders = () => {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSave={handleAddReminder} // Assuming AddReminderModal accepts onSave
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, reminderId: null, reminderTitle: '' })}
+        onConfirm={handleDeleteReminder}
+        title="Delete Reminder"
+        message="Are you sure you want to delete this reminder? This action cannot be undone."
+        itemName={deleteModal.reminderTitle}
+        confirmText="Delete Reminder"
       />
     </div>
   );

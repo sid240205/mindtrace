@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { AlertCircle, Plus, Trash2, Shield, Phone, MessageSquare, Bell } from 'lucide-react';
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import { sosApi } from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -14,6 +15,7 @@ const SOSSettings = () => {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newContact, setNewContact] = useState({ name: '', phone: '', relationship: '' });
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, contactId: null, contactName: '' });
 
   const fetchData = async () => {
     try {
@@ -65,16 +67,14 @@ const SOSSettings = () => {
     }
   };
 
-  const handleDeleteContact = async (id) => {
-    if (window.confirm('Remove this emergency contact?')) {
-      try {
-        await sosApi.deleteContact(id);
-        setContacts(contacts.filter(c => c.id !== id));
-        toast.success("Contact removed");
-      } catch (error) {
-        console.error("Error deleting contact:", error);
-        toast.error("Failed to remove contact");
-      }
+  const handleDeleteContact = async () => {
+    try {
+      await sosApi.deleteContact(deleteModal.contactId);
+      setContacts(contacts.filter(c => c.id !== deleteModal.contactId));
+      toast.success("Contact removed");
+    } catch (error) {
+      console.error("Error deleting contact:", error);
+      toast.error("Failed to remove contact");
     }
   };
 
@@ -122,7 +122,7 @@ const SOSSettings = () => {
                       </div>
                     </div>
                     <button
-                      onClick={() => handleDeleteContact(contact.id)}
+                      onClick={() => setDeleteModal({ isOpen: true, contactId: contact.id, contactName: contact.name })}
                       className="p-2 text-gray-400 hover:text-red-500 transition-colors"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -281,6 +281,17 @@ const SOSSettings = () => {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, contactId: null, contactName: '' })}
+        onConfirm={handleDeleteContact}
+        title="Remove Emergency Contact"
+        message="Are you sure you want to remove this emergency contact? They will no longer be notified during SOS events."
+        itemName={deleteModal.contactName}
+        confirmText="Remove Contact"
+      />
     </div>
   );
 };

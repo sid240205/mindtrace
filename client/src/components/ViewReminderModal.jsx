@@ -1,6 +1,10 @@
+import { useState } from 'react';
 import { X, Clock, Repeat, Edit2, Trash2, Pill, Utensils, Activity, Droplets, CheckCircle2 } from 'lucide-react';
+import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 const ViewReminderModal = ({ reminder, onClose, onEdit, onDelete, onToggleComplete }) => {
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  
   if (!reminder) return null;
 
   const reminderIcons = {
@@ -34,10 +38,8 @@ const ViewReminderModal = ({ reminder, onClose, onEdit, onDelete, onToggleComple
   };
 
   const handleDelete = () => {
-    if (window.confirm(`Are you sure you want to delete "${reminder.title}"?`)) {
-      onDelete(reminder.id);
-      onClose();
-    }
+    onDelete(reminder.id);
+    setShowDeleteModal(false);
   };
 
   return (
@@ -129,13 +131,24 @@ const ViewReminderModal = ({ reminder, onClose, onEdit, onDelete, onToggleComple
             Edit Reminder
           </button>
           <button
-            onClick={handleDelete}
+            onClick={() => setShowDeleteModal(true)}
             className="px-6 py-3 border border-red-300 text-red-700 rounded-xl font-medium hover:bg-red-50 transition-colors flex items-center gap-2"
           >
             <Trash2 className="h-5 w-5" />
             Delete
           </button>
         </div>
+
+        {/* Delete Confirmation Modal */}
+        <DeleteConfirmationModal
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={handleDelete}
+          title="Delete Reminder"
+          message="Are you sure you want to delete this reminder? This action cannot be undone."
+          itemName={reminder.title}
+          confirmText="Delete Reminder"
+        />
       </div>
     </div>
   );
