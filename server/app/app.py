@@ -1,24 +1,32 @@
 import os
 from dotenv import load_dotenv
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from app.routers import face_routes
 
 load_dotenv()
 
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.middleware.sessions import SessionMiddleware
+
+from .database import Base, engine
+from .routes.authRoutes import router as auth_router
+from .routers.face_routes import router as face_router
+
 CLIENT_URL = os.getenv("CLIENT_URL", "http://localhost:5173")
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-should-be-in-env")
+
+# Create Database Tables
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="MindTrace",
     version="1.0",
-    description="API for RAG ChatBot",
+    description="API for MindTrace",
 )
 
 origins = [
     CLIENT_URL,
     "http://localhost:5173",
-    "http://localhost:5174", # glass-client might run here
 ]
 
 app.add_middleware(
@@ -30,7 +38,10 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-app.include_router(face_routes.router, prefix="/api/face", tags=["Face Recognition"])
+app.add_middleware(SessionMiddleware,secret_key=SECRET_KEY)
+
+app.include_router(auth_router)
+app.include_router(face_router, prefix="/face", tags=["Face Recognition"])
 
 @app.get("/")
 def server_status():
