@@ -34,7 +34,7 @@ const Login = () => {
   return (
     <div className="min-h-screen flex bg-white">
       {/* Left Side - Visual */}
-      <div className="hidden lg:flex w-1/2 bg-gray-900 relative overflow-hidden">
+      <div className="hidden md:flex md:w-1/2 bg-gray-900 relative overflow-hidden">
         <div className="absolute inset-0 bg-linear-to-br from-indigo-900/40 to-purple-900/40 z-10" />
         <img
           src="https://images.unsplash.com/photo-1572635196237-14b3f281503f?q=80&w=2080&auto=format&fit=crop"
@@ -50,7 +50,7 @@ const Login = () => {
       </div>
 
       {/* Right Side - Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-24">
+      <div className="w-full md:w-1/2 flex items-center justify-center p-8 lg:p-24">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center lg:text-left">
             <p onClick={() => navigate('/')} className="cursor-pointer inline-block text-4xl font-bold text-gray-900 mb-2">MindTrace</p>

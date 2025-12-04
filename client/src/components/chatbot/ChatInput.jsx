@@ -91,17 +91,17 @@ const ChatInput = ({
     const canSend = message.trim().length > 0 && !isOverLimit && !disabled;
 
     return (
-        <form onSubmit={handleSubmit} className="chat-input-form">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2">
             {/* Attachments preview */}
             {attachments.length > 0 && (
-                <div className="chat-input-attachments">
+                <div className="flex flex-wrap gap-2">
                     {attachments.map((att) => (
-                        <div key={att.id} className="chat-input-attachment">
-                            <span className="chat-input-attachment-name">{att.name}</span>
+                        <div key={att.id} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-2xl text-xs text-gray-900">
+                            <span className="max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap">{att.name}</span>
                             <button
                                 type="button"
                                 onClick={() => removeAttachment(att.id)}
-                                className="chat-input-attachment-remove"
+                                className="w-[18px] h-[18px] rounded-full border-none bg-gray-200 text-gray-500 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red-500 hover:text-white"
                                 aria-label={`Remove ${att.name}`}
                             >
                                 <X className="w-3 h-3" />
@@ -111,7 +111,7 @@ const ChatInput = ({
                 </div>
             )}
 
-            <div className="chat-input-container">
+            <div className="flex items-end gap-2.5 bg-gray-50 border-2 border-gray-200 rounded-2xl px-3.5 py-2.5 transition-all duration-200 focus-within:border-gray-900 focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(17,24,39,0.1)]">
                 {/* Message input */}
                 <textarea
                     ref={textareaRef}
@@ -121,14 +121,18 @@ const ChatInput = ({
                     placeholder={placeholder}
                     disabled={disabled}
                     rows={1}
-                    className={`chat-input-textarea ${isOverLimit ? 'chat-input-error' : ''}`}
+                    className={`flex-1 border-none bg-transparent text-gray-900 text-sm leading-normal resize-none min-h-6 max-h-[120px] py-1.5 outline-none placeholder:text-gray-500 ${
+                        isOverLimit ? 'text-red-500' : ''
+                    }`}
                     aria-label="Message input"
                     aria-invalid={isOverLimit}
                 />
 
                 {/* Character count */}
                 {message.length > maxLength * 0.8 && (
-                    <span className={`chat-input-counter ${isOverLimit ? 'chat-input-counter-error' : ''}`}>
+                    <span className={`text-[11px] shrink-0 pb-1.5 ${
+                        isOverLimit ? 'text-red-500' : 'text-gray-500'
+                    }`}>
                         {message.length}/{maxLength}
                     </span>
                 )}
@@ -137,7 +141,7 @@ const ChatInput = ({
                 <button
                     type="submit"
                     disabled={!canSend}
-                    className="chat-input-send-btn"
+                    className="w-9 h-9 rounded-[10px] border-none bg-gray-900 text-white cursor-pointer flex items-center justify-center transition-all duration-200 shrink-0 shadow-[0_2px_4px_rgba(0,0,0,0.1)] hover:bg-gray-800 hover:-translate-y-px hover:shadow-[0_4px_6px_rgba(0,0,0,0.15)] disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed disabled:transform-none focus-visible:outline-3 focus-visible:outline-gray-900 focus-visible:outline-offset-2"
                     aria-label="Send message"
                 >
                     <Send className="w-5 h-5" />

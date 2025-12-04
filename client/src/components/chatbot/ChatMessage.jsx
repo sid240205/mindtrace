@@ -62,13 +62,16 @@ const ChatMessage = ({ message }) => {
 
     return (
         <div
-            className={`chat-message ${isUser ? 'chat-message-user' : 'chat-message-assistant'} ${isError ? 'chat-message-error' : ''
-                }`}
+            className={`flex gap-2.5 max-w-[85%] animate-[fadeIn_0.3s_ease] ${
+                isUser ? 'flex-row-reverse self-end' : 'self-start'
+            }`}
             role="article"
             aria-label={`${isUser ? 'Your' : 'Assistant'} message at ${formattedTime}`}
         >
             {/* Avatar */}
-            <div className={`chat-message-avatar ${isUser ? 'chat-avatar-user' : 'chat-avatar-assistant'}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                isUser ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-900'
+            }`}>
                 {isUser ? (
                     <User className="w-4 h-4" />
                 ) : isError ? (
@@ -79,27 +82,35 @@ const ChatMessage = ({ message }) => {
             </div>
 
             {/* Content */}
-            <div className="chat-message-content">
-                <div className="chat-message-bubble">
+            <div className="flex flex-col gap-1">
+                <div className={`px-4 py-3 rounded-[18px] text-sm leading-relaxed ${
+                    isUser 
+                        ? 'bg-gray-900 text-white rounded-br-md shadow-[0_2px_4px_rgba(0,0,0,0.1)]' 
+                        : isError
+                        ? 'bg-red-50 text-red-500 border border-red-500 rounded-bl-md'
+                        : 'bg-gray-200 text-gray-900 rounded-bl-md border border-gray-200'
+                }`}>
                     {message.isStreaming && !message.content ? (
                         <TypingIndicator />
                     ) : (
                         <div
-                            className="chat-message-text"
+                            className="[&_a]:underline [&_strong]:font-semibold [&_code]:bg-black/10 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:font-mono [&_code]:text-[13px] [&_pre]:bg-black/10 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_pre]:my-2 [&_pre_code]:font-mono [&_pre_code]:text-[13px] [&_pre_code]:whitespace-pre-wrap"
                             dangerouslySetInnerHTML={{ __html: htmlContent }}
                         />
                     )}
                 </div>
 
                 {/* Timestamp */}
-                <span className="chat-message-time">{formattedTime}</span>
+                <span className={`text-[11px] text-gray-500 px-1 ${isUser ? 'text-right' : ''}`}>
+                    {formattedTime}
+                </span>
 
                 {/* Attachments */}
                 {message.attachments && message.attachments.length > 0 && (
-                    <div className="chat-message-attachments">
+                    <div className="flex flex-wrap gap-2">
                         {message.attachments.map((att) => (
-                            <div key={att.id} className="chat-attachment">
-                                <span className="chat-attachment-name">{att.name}</span>
+                            <div key={att.id} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-2xl text-xs text-gray-900">
+                                <span className="max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap">{att.name}</span>
                             </div>
                         ))}
                     </div>
