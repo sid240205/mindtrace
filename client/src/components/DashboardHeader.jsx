@@ -1,13 +1,30 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
 import { Search, Bell, Menu, Battery, Wifi, LogOut } from 'lucide-react';
 import { logout } from '../services/auth';
+import { userApi } from '../services/api';
 
 const DashboardHeader = ({ onMenuClick }) => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [notificationCount, setNotificationCount] = useState(3);
   const [showNotifications, setShowNotifications] = useState(false);
   const [glassesConnected, setGlassesConnected] = useState(true);
   const [batteryLevel, setBatteryLevel] = useState(87);
+  const [profile, setProfile] = useState(null);
+
+  // Fetch user profile
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await userApi.getProfile();
+        setProfile(response.data);
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   // Simulate real-time updates
   useEffect(() => {
@@ -23,6 +40,22 @@ const DashboardHeader = ({ onMenuClick }) => {
     if (batteryLevel > 50) return 'text-emerald-600';
     if (batteryLevel > 20) return 'text-yellow-600';
     return 'text-red-600';
+  };
+
+  const getInitials = () => {
+    if (!profile) return 'U';
+    if (profile.full_name) {
+      return profile.full_name
+        .split(' ')
+        .map(n => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    if (profile.email) {
+      return profile.email[0].toUpperCase();
+    }
+    return 'U';
   };
 
   return (
@@ -132,9 +165,13 @@ const DashboardHeader = ({ onMenuClick }) => {
 
           {/* User Profile */}
           <div className="hidden md:flex items-center gap-3 pl-4 border-l border-gray-200">
-            <div className="w-9 h-9 rounded-full bg-linear-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
-              JD
-            </div>
+            <button
+              onClick={() => navigate('/dashboard/settings')}
+              className="w-9 h-9 rounded-full bg-linear-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm hover:shadow-lg transition-all duration-200 hover:scale-105"
+              title={profile?.full_name || profile?.email || 'Profile Settings'}
+            >
+              {getInitials()}
+            </button>
             <button
               onClick={logout}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500 hover:text-red-600"
