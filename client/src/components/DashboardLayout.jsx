@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useLocation, Outlet } from 'react-router';
 import Sidebar from './Sidebar';
 import DashboardHeader from './DashboardHeader';
+import { Chatbot } from './chatbot';
 
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -26,8 +27,12 @@ const DashboardLayout = () => {
           <Outlet />
         </main>
       </div>
+
+      {/* Chatbot Widget */}
+      <Chatbot />
     </div>
   );
 };
 
 export default DashboardLayout;
+
