@@ -119,3 +119,15 @@ class SOSConfig(Base):
     alert_services = Column(Boolean, default=False)
 
     user = sa_relationship("User", back_populates="sos_config")
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    conversation_id = Column(String, nullable=False, index=True)
+    role = Column(String, nullable=False)  # 'user' or 'assistant'
+    content = Column(Text, nullable=False)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = sa_relationship("User")
