@@ -108,4 +108,8 @@ export const userApi = {
   deleteProfileImage: () => api.delete('/user/profile-image'),
 };
 
+export const searchApi = {
+  search: (query) => api.get('/search', { params: { q: query } }),
+};
+
 export default api;
