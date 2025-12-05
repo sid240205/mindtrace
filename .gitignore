@@ -9,3 +9,4 @@ __pycache__/
 *.so
 .Python
 uv.lock
+server/ai_engine/profiles/images/

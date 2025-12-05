@@ -180,14 +180,16 @@ def sync_embeddings_from_db(app, db_session):
     metadatas = []
     
     for contact in contacts:
-        if not contact.profile_photo or not os.path.exists(contact.profile_photo):
-            print(f"Warning: Photo not found for {contact.name}: {contact.profile_photo}")
+        if not contact.profile_photo:
+            print(f"Warning: No photo data for {contact.name}")
             continue
             
-        # Read and process the image
-        img = cv2.imread(contact.profile_photo)
+        # Convert binary data to OpenCV image
+        nparr = np.frombuffer(contact.profile_photo, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        
         if img is None:
-            print(f"Error: Could not read image for {contact.name}")
+            print(f"Error: Could not decode image for {contact.name}")
             continue
         
         # Extract embedding

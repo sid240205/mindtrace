@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
 import { Glasses, Monitor } from 'lucide-react';
 import HUDOverlay from '../components/HUDOverlay';
+import { faceApi } from '../services/api';
 
 const FaceRecognition = () => {
     const [mode, setMode] = useState('standard'); // 'standard' or 'rayban'
@@ -16,6 +16,24 @@ const FaceRecognition = () => {
     const timeoutRef = useRef(null);
 
     const [subtitle, setSubtitle] = useState("");
+
+    // Extract token from URL on mount
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        
+        if (token) {
+            localStorage.setItem('token', token);
+            setDebugStatus("Token received");
+            // Clean URL without reloading
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } else {
+            const existingToken = localStorage.getItem('token');
+            if (!existingToken) {
+                setDebugStatus("No token - Auth required");
+            }
+        }
+    }, []);
     
     // Start Camera
     const startCamera = async () => {
@@ -43,6 +61,8 @@ const FaceRecognition = () => {
 
     const isProcessingRef = useRef(false);
     const loopActiveRef = useRef(false);
+    const lastRequestTimeRef = useRef(0);
+    const MIN_REQUEST_INTERVAL = 500; // Minimum 500ms between requests (2 FPS max)
 
     const captureFrame = () => {
         if (videoRef.current && canvasRef.current) {
@@ -242,6 +262,13 @@ const FaceRecognition = () => {
     const processFrame = async () => {
         if (!loopActiveRef.current) return;
         
+        // Throttle requests to prevent overwhelming the server
+        const now = Date.now();
+        if (now - lastRequestTimeRef.current < MIN_REQUEST_INTERVAL) {
+            requestAnimationFrame(processFrame);
+            return;
+        }
+        
         if (isProcessingRef.current) {
             requestAnimationFrame(processFrame);
             return;
@@ -253,6 +280,7 @@ const FaceRecognition = () => {
         }
 
         isProcessingRef.current = true;
+        lastRequestTimeRef.current = now;
         
         try {
             const blob = await captureFrame();
@@ -265,7 +293,7 @@ const FaceRecognition = () => {
             const formData = new FormData();
             formData.append('file', blob, 'frame.jpg');
 
-            const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/face/recognize`, formData);
+            const response = await faceApi.recognize(formData);
             const data = response.data;
 
             const results = Array.isArray(data) ? data : [data];
@@ -321,7 +349,19 @@ const FaceRecognition = () => {
                 }
             }
         } catch (err) {
+            console.error('Face recognition error:', err);
+            
+            // Handle authentication errors
+            if (err.response?.status === 401) {
+                setDebugStatus('Auth Error - Check token');
+                loopActiveRef.current = false; // Stop the loop on auth failure
+                return;
+            }
+            
             setDebugStatus(`Err: ${err.message}`);
+            
+            // Add exponential backoff on errors
+            await new Promise(resolve => setTimeout(resolve, 1000));
         } finally {
             isProcessingRef.current = false;
             if (loopActiveRef.current) {

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, Phone, Mail, Edit2, Trash2 } from 'lucide-react';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
+import ContactAvatar from './ContactAvatar';
 import { contactsApi } from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -55,19 +56,7 @@ const ContactDetailModal = ({ contact, onClose, onEdit }) => {
         {/* Header */}
         <div className="p-6 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            {contact.profile_photo_url ? (
-              <img 
-                src={contact.profile_photo_url} 
-                alt={contact.name}
-                className="w-16 h-16 rounded-full object-cover"
-              />
-            ) : (
-              <div
-                className={`w-16 h-16 rounded-full bg-linear-to-br from-${contact.color}-400 to-${contact.color}-600 flex items-center justify-center text-white font-semibold text-xl`}
-              >
-                {contact.avatar}
-              </div>
-            )}
+            <ContactAvatar contact={contact} size="lg" />
             <div>
               <h2 className="text-2xl font-bold text-gray-900">{contact.name}</h2>
               <p className="text-gray-500">{contact.relationship_detail}</p>
