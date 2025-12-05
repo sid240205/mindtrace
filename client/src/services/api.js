@@ -61,6 +61,8 @@ export const interactionsApi = {
   get: (id) => api.get(`/interactions/${id}`),
   create: (data) => api.post('/interactions/', data),
   toggleStar: (id) => api.put(`/interactions/${id}/star`),
+  search: (query, limit = 10) => api.get('/interactions/search', { params: { query, limit } }),
+  syncToChroma: () => api.post('/interactions/sync-to-chroma'),
 };
 
 export const alertsApi = {
@@ -112,6 +114,10 @@ export const userApi = {
 
 export const searchApi = {
   search: (query) => api.get('/search', { params: { q: query } }),
+};
+
+export const asrApi = {
+  syncConversations: (userId) => api.post(`/asr/sync-conversations?user_id=${userId}`),
 };
 
 export default api;

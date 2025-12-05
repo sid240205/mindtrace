@@ -38,4 +38,12 @@ export const faceApi = {
   }),
 };
 
+export const userApi = {
+  getProfile: () => api.get('/user/profile'),
+};
+
+export const asrApi = {
+  syncConversations: (userId) => api.post(`/asr/sync-conversations?user_id=${userId}`),
+};
+
 export default api;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, Download, X, MapPin, Clock, Star } from 'lucide-react';
-import { interactionsApi } from '../services/api';
+import { Search, Filter, Download, X, MapPin, Clock, Star, RefreshCw } from 'lucide-react';
+import { interactionsApi, asrApi, userApi } from '../services/api';
 import toast from 'react-hot-toast';
 
 const InteractionHistory = () => {
@@ -11,17 +11,64 @@ const InteractionHistory = () => {
   
   const [interactions, setInteractions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [useSemanticSearch, setUseSemanticSearch] = useState(false);
+
+  const handleSyncConversations = async () => {
+    setSyncing(true);
+    try {
+      const userResponse = await userApi.getProfile();
+      const userId = userResponse.data.id;
+      
+      const response = await asrApi.syncConversations(userId);
+      toast.success(response.data.message || 'Conversations synced successfully');
+      
+      // Also sync to ChromaDB for embeddings
+      try {
+        await interactionsApi.syncToChroma();
+        toast.success('Conversations indexed for semantic search');
+      } catch (err) {
+        console.error("Error syncing to ChromaDB:", err);
+      }
+      
+      // Refresh interactions after sync
+      fetchInteractions();
+    } catch (error) {
+      console.error("Error syncing conversations:", error);
+      toast.error("Failed to sync conversations");
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const fetchInteractions = async () => {
     try {
       setLoading(true);
-      const params = {
-        search: searchQuery,
-        mood: selectedMood !== 'all' ? selectedMood : undefined,
-        starred: starredOnly ? true : undefined
-      };
-      const response = await interactionsApi.getAll(params);
-      setInteractions(response.data);
+      
+      // Use semantic search if query is long enough and semantic search is enabled
+      if (useSemanticSearch && searchQuery && searchQuery.length > 3) {
+        const response = await interactionsApi.search(searchQuery, 50);
+        let results = response.data.results || [];
+        
+        // Apply additional filters
+        if (selectedMood !== 'all') {
+          results = results.filter(i => i.mood === selectedMood);
+        }
+        if (starredOnly) {
+          results = results.filter(i => i.starred);
+        }
+        
+        setInteractions(results);
+      } else {
+        // Use regular database query
+        const params = {
+          search: searchQuery,
+          mood: selectedMood !== 'all' ? selectedMood : undefined,
+          starred: starredOnly ? true : undefined
+        };
+        const response = await interactionsApi.getAll(params);
+        setInteractions(response.data);
+      }
     } catch (error) {
       console.error("Error fetching interactions:", error);
       toast.error("Failed to load interactions");
@@ -36,7 +83,7 @@ const InteractionHistory = () => {
       fetchInteractions();
     }, 500);
     return () => clearTimeout(timer);
-  }, [searchQuery, selectedMood, starredOnly]);
+  }, [searchQuery, selectedMood, starredOnly, useSemanticSearch]);
 
   const handleToggleStar = async (e, id) => {
     e.stopPropagation();
@@ -119,61 +166,112 @@ const InteractionHistory = () => {
 
       {/* Filters and Search */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          {/* Search */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by name, topic, or keyword..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl
-                focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent
-                transition-all duration-200"
-            />
+        <div className="flex flex-col gap-4">
+          {/* Search Row */}
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Search */}
+            <div className="flex-1 relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder={useSemanticSearch ? "Search by meaning (e.g., 'happy memories', 'health discussions')..." : "Search by name, topic, or keyword..."}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl
+                  focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent
+                  transition-all duration-200"
+              />
+            </div>
+            
+            {/* Semantic Search Toggle */}
+            <button
+              onClick={() => setUseSemanticSearch(!useSemanticSearch)}
+              className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center gap-2 whitespace-nowrap
+                ${useSemanticSearch
+                  ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                  : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+                }`}
+              title="Use AI-powered semantic search to find conversations by meaning"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              AI Search
+            </button>
           </div>
+          
+          {/* Filters Row */}
+          <div className="flex flex-col md:flex-row gap-4">
 
-          {/* Mood Filter */}
-          <select
-            value={selectedMood}
-            onChange={(e) => setSelectedMood(e.target.value)}
-            className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl
-              focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent
-              transition-all duration-200 cursor-pointer"
-          >
-            <option value="all">All Moods</option>
-            <option value="happy">Happy</option>
-            <option value="neutral">Neutral</option>
-            <option value="sad">Sad</option>
-            <option value="anxious">Anxious</option>
-            <option value="confused">Confused</option>
-          </select>
+            {/* Mood Filter */}
+            <select
+              value={selectedMood}
+              onChange={(e) => setSelectedMood(e.target.value)}
+              className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl
+                focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent
+                transition-all duration-200 cursor-pointer"
+            >
+              <option value="all">All Moods</option>
+              <option value="happy">Happy</option>
+              <option value="neutral">Neutral</option>
+              <option value="sad">Sad</option>
+              <option value="anxious">Anxious</option>
+              <option value="confused">Confused</option>
+            </select>
 
-          {/* Starred Filter */}
-          <button
-            onClick={() => setStarredOnly(!starredOnly)}
-            className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center gap-2
-              ${starredOnly
-                ? 'bg-yellow-100 text-yellow-700 border-2 border-yellow-300'
-                : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
-              }`}
-          >
-            <Star className={`h-5 w-5 ${starredOnly ? 'fill-yellow-700' : ''}`} />
-            Starred
-          </button>
+            {/* Starred Filter */}
+            <button
+              onClick={() => setStarredOnly(!starredOnly)}
+              className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center gap-2
+                ${starredOnly
+                  ? 'bg-yellow-100 text-yellow-700 border-2 border-yellow-300'
+                  : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+                }`}
+            >
+              <Star className={`h-5 w-5 ${starredOnly ? 'fill-yellow-700' : ''}`} />
+              Starred
+            </button>
 
-          {/* Export */}
-          <button
-            onClick={handleExport}
-            className="px-6 py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800
-              transition-all duration-200 flex items-center gap-2"
-          >
-            <Download className="h-5 w-5" />
-            Export
-          </button>
+            {/* Sync Conversations */}
+            <button
+              onClick={handleSyncConversations}
+              disabled={syncing}
+              className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700
+                transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <RefreshCw className={`h-5 w-5 ${syncing ? 'animate-spin' : ''}`} />
+              {syncing ? 'Syncing...' : 'Sync'}
+            </button>
+
+            {/* Export */}
+            <button
+              onClick={handleExport}
+              className="px-6 py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800
+                transition-all duration-200 flex items-center gap-2"
+            >
+              <Download className="h-5 w-5" />
+              Export
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Search Info Banner */}
+      {useSemanticSearch && searchQuery && !loading && (
+        <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-4 flex items-center gap-3">
+          <svg className="h-5 w-5 text-purple-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-purple-900">
+              AI Semantic Search Active
+            </p>
+            <p className="text-xs text-purple-700">
+              Showing {interactions.length} conversations ranked by relevance to "{searchQuery}"
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Interactions Timeline */}
       <div className="space-y-4">
@@ -243,6 +341,11 @@ const InteractionHistory = () => {
                       <div className="flex items-center gap-1">
                         <MapPin className="h-4 w-4" />
                         {interaction.location}
+                      </div>
+                    )}
+                    {useSemanticSearch && interaction.similarity_score !== undefined && (
+                      <div className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-medium border border-purple-200">
+                        {Math.round(interaction.similarity_score * 100)}% match
                       </div>
                     )}
                   </div>
