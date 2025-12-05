@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bell, AlertCircle, Info, AlertTriangle, X, Filter, Trash2 } from 'lucide-react';
+import { Bell, AlertCircle, Info, AlertTriangle, X, Filter, Trash2, Loader2 } from 'lucide-react';
 import { alertsApi } from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -10,6 +10,11 @@ const AlertsNotifications = () => {
   
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Loading states for actions
+  const [processingAlerts, setProcessingAlerts] = useState(new Set()); // IDs being processed (read/delete)
+  const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
   
   // Refs for tracking alerts state for notifications
   const previousAlertIds = useRef(new Set());
@@ -148,19 +153,31 @@ const AlertsNotifications = () => {
 
   const handleMarkRead = async (e, id) => {
     e.stopPropagation();
+    if (processingAlerts.has(id)) return;
+
     try {
+      setProcessingAlerts(prev => new Set(prev).add(id));
       await alertsApi.markRead(id);
       setAlerts(alerts.map(a => a.id === id ? { ...a, read: true } : a));
       // Trigger refresh of unread count in header
       window.dispatchEvent(new Event('refreshUnreadCount'));
     } catch (error) {
       console.error("Error marking alert as read:", error);
+    } finally {
+      setProcessingAlerts(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
   };
 
   const handleDelete = async (e, id) => {
     e.stopPropagation();
+    if (processingAlerts.has(id)) return;
+
     try {
+      setProcessingAlerts(prev => new Set(prev).add(id));
       await alertsApi.delete(id);
       setAlerts(alerts.filter(a => a.id !== id));
       toast.success("Alert deleted");
@@ -168,6 +185,12 @@ const AlertsNotifications = () => {
     } catch (error) {
       console.error("Error deleting alert:", error);
       toast.error("Failed to delete alert");
+      // Only remove from processing set if it failed, otherwise it's gone from list
+      setProcessingAlerts(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
   };
 
@@ -177,6 +200,7 @@ const AlertsNotifications = () => {
 
   const confirmDeleteAll = async () => {
     try {
+      setIsDeletingAll(true);
       await alertsApi.deleteAll();
       setAlerts([]);
       toast.success("All alerts deleted");
@@ -186,11 +210,16 @@ const AlertsNotifications = () => {
       console.error("Error deleting all alerts:", error);
       toast.error("Failed to delete all alerts");
       setShowDeleteConfirm(false);
+    } finally {
+      setIsDeletingAll(false);
     }
   };
 
   const handleMarkAllRead = async () => {
+    if (isMarkingAllRead) return;
+    
     try {
+      setIsMarkingAllRead(true);
       await alertsApi.markAllRead();
       setAlerts(alerts.map(a => ({ ...a, read: true })));
       toast.success("All alerts marked as read");
@@ -199,6 +228,8 @@ const AlertsNotifications = () => {
     } catch (error) {
       console.error("Error marking all read:", error);
       toast.error("Failed to update alerts");
+    } finally {
+      setIsMarkingAllRead(false);
     }
   };
 
@@ -281,14 +312,23 @@ const AlertsNotifications = () => {
           <div className="ml-auto flex items-center gap-4">
             <button 
               onClick={handleMarkAllRead}
-              className="text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
+              disabled={isMarkingAllRead || isDeletingAll}
+              className="text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              Mark All as Read
+              {isMarkingAllRead ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Marking...
+                </>
+              ) : (
+                'Mark All as Read'
+              )}
             </button>
             {alerts.length > 0 && (
               <button 
                 onClick={handleDeleteAll}
-                className="text-sm font-medium text-red-600 hover:text-red-800 transition-colors flex items-center gap-1"
+                disabled={isMarkingAllRead || isDeletingAll}
+                className="text-sm font-medium text-red-600 hover:text-red-800 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Trash2 className="h-4 w-4" />
                 Delete All
@@ -315,8 +355,9 @@ const AlertsNotifications = () => {
                 alert.read 
                   ? 'bg-white border-gray-200' 
                   : `${config.cardBg} ${config.border} shadow-md`
-              }`}
+              } ${processingAlerts.has(alert.id) ? 'opacity-70 pointer-events-none' : ''}`}
               onClick={() => {
+                if (processingAlerts.has(alert.id)) return;
                 setSelectedAlert(alert);
                 if (!alert.read) handleMarkRead({ stopPropagation: () => {} }, alert.id);
               }}
@@ -340,10 +381,15 @@ const AlertsNotifications = () => {
                     )}
                     <button
                       onClick={(e) => handleDelete(e, alert.id)}
-                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors ml-2"
+                      disabled={processingAlerts.has(alert.id)}
+                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors ml-2 disabled:opacity-50"
                       title="Delete notification"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      {processingAlerts.has(alert.id) ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
                     </button>
                   </div>
                   <p className="text-xs text-gray-500">{formatTimestamp(alert.timestamp)}</p>
@@ -431,9 +477,17 @@ const AlertsNotifications = () => {
               </button>
               <button
                 onClick={confirmDeleteAll}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors"
+                disabled={isDeletingAll}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Delete All
+                {isDeletingAll ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete All'
+                )}
               </button>
             </div>
           </div>
