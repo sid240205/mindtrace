@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func, case
-from typing import List, Any
+from typing import List, Any, Optional
 from pydantic import BaseModel
+from datetime import datetime
 import re
 
 from ..database import get_db
@@ -23,16 +24,76 @@ class PageMatch(BaseModel):
     matched_content: str = ""
     relevance: int = 0
 
-class SearchResponse(BaseModel):
-    pages: List[PageMatch] = []
-    contacts: List[Any] = []
-    interactions: List[Any] = []
-    reminders: List[Any] = []
-    alerts: List[Any] = []
-    sos_contacts: List[Any] = []
+class ContactSearchResponse(BaseModel):
+    id: int
+    name: str
+    relationship: str
+    relationship_detail: Optional[str] = None
+    avatar: Optional[str] = None
+    color: Optional[str] = None
+    phone_number: Optional[str] = None
+    email: Optional[str] = None
+    notes: Optional[str] = None
+    visit_frequency: Optional[str] = None
+    last_seen: Optional[datetime] = None
+    is_active: bool
+    profile_photo: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class InteractionSearchResponse(BaseModel):
+    id: int
+    summary: Optional[str] = None
+    full_details: Optional[str] = None
+    key_topics: Optional[List[str]] = []
+    mood: Optional[str] = None
+    timestamp: datetime
+    contact_name: Optional[str] = None
     
     class Config:
         from_attributes = True
+
+class ReminderSearchResponse(BaseModel):
+    id: int
+    title: str
+    type: str
+    time: str
+    recurrence: str
+    notes: Optional[str] = None
+    completed: bool
+    
+    class Config:
+        from_attributes = True
+
+class AlertSearchResponse(BaseModel):
+    id: int
+    type: str
+    severity: str
+    title: str
+    message: str
+    timestamp: datetime
+    read: bool
+    
+    class Config:
+        from_attributes = True
+
+class SOSContactSearchResponse(BaseModel):
+    id: int
+    name: str
+    phone: str
+    relationship: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+class SearchResponse(BaseModel):
+    pages: List[PageMatch] = []
+    contacts: List[ContactSearchResponse] = []
+    interactions: List[InteractionSearchResponse] = []
+    reminders: List[ReminderSearchResponse] = []
+    alerts: List[AlertSearchResponse] = []
+    sos_contacts: List[SOSContactSearchResponse] = []
 
 def create_search_patterns(query: str):
     """Create multiple search patterns for better matching"""
