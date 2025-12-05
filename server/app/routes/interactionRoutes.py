@@ -217,3 +217,99 @@ def sync_interactions_to_chroma(
     except Exception as e:
         print(f"Error syncing interactions: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/search")
+def search_interactions(
+    query: str,
+    limit: int = 10,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Semantic search for interactions using ChromaDB embeddings.
+    Returns interactions ranked by semantic similarity to the query.
+    """
+    try:
+        from app.chroma_client import get_conversation_collection
+        collection = get_conversation_collection()
+        
+        # Query ChromaDB for similar interactions
+        results = collection.query(
+            query_texts=[query],
+            n_results=limit,
+            where={"user_id": current_user.id}
+        )
+        
+        if not results or not results['ids'] or not results['ids'][0]:
+            return {"results": [], "count": 0, "query": query}
+        
+        # Extract interaction IDs from ChromaDB results
+        interaction_ids = []
+        distances = results['distances'][0] if results.get('distances') else []
+        metadatas = results['metadatas'][0] if results.get('metadatas') else []
+        documents = results['documents'][0] if results.get('documents') else []
+        
+        for i, chroma_id in enumerate(results['ids'][0]):
+            # Extract interaction_id from "interaction_{id}" format
+            if chroma_id.startswith("interaction_"):
+                interaction_id = int(chroma_id.split("_")[1])
+                interaction_ids.append({
+                    "id": interaction_id,
+                    "distance": distances[i] if i < len(distances) else None,
+                    "metadata": metadatas[i] if i < len(metadatas) else {},
+                    "snippet": documents[i][:200] if i < len(documents) else ""
+                })
+        
+        # Fetch full interaction details from database
+        search_results = []
+        for item in interaction_ids:
+            interaction = db.query(Interaction).filter(
+                Interaction.id == item["id"],
+                Interaction.user_id == current_user.id
+            ).first()
+            
+            if interaction:
+                # Enrich with contact info
+                contact_avatar = None
+                contact_relationship = None
+                contact_color = None
+                
+                if interaction.contact_id:
+                    contact = db.query(Contact).filter(Contact.id == interaction.contact_id).first()
+                    if contact:
+                        contact_avatar = contact.avatar
+                        contact_relationship = contact.relationship_detail or contact.relationship
+                        contact_color = contact.color
+                
+                result = {
+                    "id": interaction.id,
+                    "user_id": interaction.user_id,
+                    "contact_id": interaction.contact_id,
+                    "contact_name": interaction.contact_name,
+                    "contact_avatar": contact_avatar,
+                    "contact_relationship": contact_relationship,
+                    "contact_color": contact_color,
+                    "summary": interaction.summary,
+                    "full_details": interaction.full_details,
+                    "key_topics": interaction.key_topics,
+                    "mood": interaction.mood,
+                    "timestamp": interaction.timestamp.isoformat() if interaction.timestamp else None,
+                    "duration": interaction.duration,
+                    "location": interaction.location,
+                    "starred": interaction.starred,
+                    "similarity_score": 1 - item["distance"] if item["distance"] is not None else None,
+                    "snippet": item["snippet"]
+                }
+                search_results.append(result)
+        
+        return {
+            "results": search_results,
+            "count": len(search_results),
+            "query": query
+        }
+        
+    except Exception as e:
+        print(f"Error searching interactions: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))

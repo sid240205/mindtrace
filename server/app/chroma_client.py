@@ -15,26 +15,26 @@ def get_chroma_client():
     tenant = os.getenv("CHROMA_TENANT", "default_tenant")
     database = os.getenv("CHROMA_DATABASE", "default_database")
     
-    print(f"Connecting to ChromaDB at {host}:{port} (Tenant: {tenant})")
+    print(f"Connecting to ChromaDB at {host}:{port} (Tenant: {tenant}, Database: {database})")
     
     try:
         # If API key is present, assume we need authentication
         if api_key:
+            # For cloud ChromaDB (api.trychroma.com), use SSL
+            ssl = host == "api.trychroma.com" or port == "443"
+            
             client = chromadb.HttpClient(
                 host=host,
                 port=int(port),
+                ssl=ssl,
                 headers={"X-Chroma-Token": api_key},
                 tenant=tenant,
                 database=database,
                 settings=Settings(allow_reset=True, anonymized_telemetry=False)
             )
         else:
-            # Fallback to local persistent client if no host/key provided, 
-            # or HttpClient without auth if host provided but no key.
-            # But user said "added relevant api key", so likely the above path.
-            # If they are running locally without auth, this might fail if we enforce key.
-            # Let's try HttpClient without headers if no key.
-             client = chromadb.HttpClient(
+            # Fallback to HttpClient without auth
+            client = chromadb.HttpClient(
                 host=host,
                 port=int(port),
                 tenant=tenant,
@@ -45,10 +45,6 @@ def get_chroma_client():
         return client
     except Exception as e:
         print(f"Error connecting to ChromaDB: {e}")
-        # Fallback to local persistent storage if remote fails? 
-        # The user wants to replace local storage, so maybe we shouldn't fallback silently.
-        # But for development safety, maybe.
-        # For now, let's raise or return None.
         raise e
 
 def get_face_collection():

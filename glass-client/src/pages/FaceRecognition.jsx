@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
 import { Glasses, Monitor } from 'lucide-react';
 import HUDOverlay from '../components/HUDOverlay';
+import { faceApi, userApi } from '../services/api';
 
 const FaceRecognition = () => {
     const [mode, setMode] = useState('standard'); // 'standard' or 'rayban'
@@ -16,6 +16,39 @@ const FaceRecognition = () => {
     const timeoutRef = useRef(null);
 
     const [subtitle, setSubtitle] = useState("");
+    const [userId, setUserId] = useState(null);
+
+    // Extract token from URL on mount and fetch user profile
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        
+        if (token) {
+            localStorage.setItem('token', token);
+            setDebugStatus("Token received");
+            // Clean URL without reloading
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } else {
+            const existingToken = localStorage.getItem('token');
+            if (!existingToken) {
+                setDebugStatus("No token - Auth required");
+            }
+        }
+        
+        // Fetch user profile to get user_id
+        const fetchUserProfile = async () => {
+            try {
+                const response = await userApi.getProfile();
+                setUserId(response.data.id);
+                setDebugStatus("User loaded");
+            } catch (error) {
+                console.error("Error fetching user profile:", error);
+                setDebugStatus("User fetch failed");
+            }
+        };
+        
+        fetchUserProfile();
+    }, []);
     
     // Start Camera
     const startCamera = async () => {
@@ -43,6 +76,8 @@ const FaceRecognition = () => {
 
     const isProcessingRef = useRef(false);
     const loopActiveRef = useRef(false);
+    const lastRequestTimeRef = useRef(0);
+    const MIN_REQUEST_INTERVAL = 500; // Minimum 500ms between requests (2 FPS max)
 
     const captureFrame = () => {
         if (videoRef.current && canvasRef.current) {
@@ -137,63 +172,109 @@ const FaceRecognition = () => {
     const isRecordingRef = useRef(false);
 
     const startRecording = async (profileId) => {
-        if (isRecordingRef.current) return;
+        if (isRecordingRef.current || !userId) return;
         
         try {
             console.log("Starting ASR for:", profileId);
             isRecordingRef.current = true;
             
-            // Connect WebSocket
-            // Use standard WS URL construction based on current page or env
-            const wsUrl = `ws://localhost:8000/asr/${encodeURIComponent(profileId)}`;
+            // Connect WebSocket with user_id
+            // Use environment variable for WebSocket URL
+            const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+            const token = localStorage.getItem('token');
+            const wsUrl = apiBaseUrl.replace(/^http/, 'ws') + `/asr/${userId}/${encodeURIComponent(profileId)}?token=${token}`;
+            console.log("Connecting to WebSocket:", wsUrl);
             wsRef.current = new WebSocket(wsUrl);
             
             wsRef.current.onopen = () => {
-                console.log("ASR WS Open");
+                console.log("ASR WebSocket connected successfully");
+                setDebugStatus(`ASR: ${profileId}`);
             };
             
             wsRef.current.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
                     if (data.type === 'subtitle') {
-                         setSubtitle(data.text);
+                        setSubtitle(data.text);
                     }
                 } catch (e) {
-                    console.error("WS Parse Err", e);
+                    console.error("WebSocket parse error:", e);
                 }
             };
             
             wsRef.current.onerror = (e) => {
-                console.error("ASR WS Error", e);
+                console.error("ASR WebSocket error:", e);
+                setDebugStatus("ASR WS Error");
+            };
+            
+            wsRef.current.onclose = (e) => {
+                console.log("ASR WebSocket closed:", e.code, e.reason);
+                if (e.code === 1008) {
+                    setDebugStatus("ASR Auth Fail");
+                } else if (e.code !== 1000) {
+                    setDebugStatus(`ASR Closed: ${e.code}`);
+                }
             };
 
             // Start Audio
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                audio: {
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    autoGainControl: true
-                }
-            });
-            audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-            audioInputRef.current = audioContextRef.current.createMediaStreamSource(stream);
-            
-            // Create ScriptProcessor (bufferSize, inputChannels, outputChannels)
-            processorRef.current = audioContextRef.current.createScriptProcessor(4096, 1, 1);
-            
-            processorRef.current.onaudioprocess = (e) => {
-                if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true,
+                        sampleRate: 16000
+                    }
+                });
                 
-                const inputData = e.inputBuffer.getChannelData(0);
-                // Send raw float32 data
-                wsRef.current.send(inputData);
-            };
-            
-            audioInputRef.current.connect(processorRef.current);
-            processorRef.current.connect(audioContextRef.current.destination); // Needed for processing to happen
-            
-        } catch (err) {
-            console.error("Error starting audio:", err);
+                // Initialize Audio Context
+                audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+                
+                // Handle Suspended State (Autoplay Policy)
+                if (audioContextRef.current.state === 'suspended') {
+                    console.warn("AudioContext suspended! Attempting resume...");
+                    setDebugStatus("CLICK TO ENABLE AUDIO"); // Request user interaction
+                    
+                     // Try immediate resume
+                    try {
+                        await audioContextRef.current.resume();
+                    } catch (e) {
+                         // Will need a button press mostly
+                    }
+                }
+                
+                audioInputRef.current = audioContextRef.current.createMediaStreamSource(stream);
+                
+                // standard BufferSize 4096 is good for ~0.25s chunks at 16k
+                // 4096 / 16000 = 0.256s
+                processorRef.current = audioContextRef.current.createScriptProcessor(4096, 1, 1);
+                
+                processorRef.current.onaudioprocess = (e) => {
+                    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+                    
+                    const inputData = e.inputBuffer.getChannelData(0);
+                    // Send raw float32 data
+                    // We need to filter out silence on client side? 
+                    // No, let server VAD handle it to keep client dummy.
+                    
+                     // Downsample if needed? No, context is already 16000 if supported.
+                     // But verify sample rate.
+                    wsRef.current.send(inputData);
+                };
+                
+                audioInputRef.current.connect(processorRef.current);
+                processorRef.current.connect(audioContextRef.current.destination);
+                
+                setDebugStatus(`REC: ${profileId}`);
+
+            } catch (err) {
+                console.error("Audio Init Error:", err);
+                setDebugStatus("Mic Error");
+                isRecordingRef.current = false;
+                if (wsRef.current) wsRef.current.close();
+            }
+        } catch (outerErr) {
+            console.error("Outer Error in startRecording:", outerErr);
             isRecordingRef.current = false;
         }
     };
@@ -242,6 +323,13 @@ const FaceRecognition = () => {
     const processFrame = async () => {
         if (!loopActiveRef.current) return;
         
+        // Throttle requests to prevent overwhelming the server
+        const now = Date.now();
+        if (now - lastRequestTimeRef.current < MIN_REQUEST_INTERVAL) {
+            requestAnimationFrame(processFrame);
+            return;
+        }
+        
         if (isProcessingRef.current) {
             requestAnimationFrame(processFrame);
             return;
@@ -253,6 +341,7 @@ const FaceRecognition = () => {
         }
 
         isProcessingRef.current = true;
+        lastRequestTimeRef.current = now;
         
         try {
             const blob = await captureFrame();
@@ -265,7 +354,7 @@ const FaceRecognition = () => {
             const formData = new FormData();
             formData.append('file', blob, 'frame.jpg');
 
-            const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/face/recognize`, formData);
+            const response = await faceApi.recognize(formData);
             const data = response.data;
 
             const results = Array.isArray(data) ? data : [data];
@@ -321,7 +410,19 @@ const FaceRecognition = () => {
                 }
             }
         } catch (err) {
+            console.error('Face recognition error:', err);
+            
+            // Handle authentication errors
+            if (err.response?.status === 401) {
+                setDebugStatus('Auth Error - Check token');
+                loopActiveRef.current = false; // Stop the loop on auth failure
+                return;
+            }
+            
             setDebugStatus(`Err: ${err.message}`);
+            
+            // Add exponential backoff on errors
+            await new Promise(resolve => setTimeout(resolve, 1000));
         } finally {
             isProcessingRef.current = false;
             if (loopActiveRef.current) {

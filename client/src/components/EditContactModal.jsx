@@ -3,6 +3,36 @@ import { X, Upload } from 'lucide-react';
 import { contactsApi } from '../services/api';
 import toast from 'react-hot-toast';
 import UnsavedChangesModal from './UnsavedChangesModal';
+import ContactAvatar from './ContactAvatar';
+import { useAuthenticatedImage } from '../hooks/useAuthenticatedImage';
+
+const CurrentProfilePhoto = ({ photoUrl }) => {
+  const blobUrl = useAuthenticatedImage(photoUrl);
+  
+  if (!blobUrl) {
+    return (
+      <div className="mb-4">
+        <p className="text-sm font-semibold text-gray-900 mb-2">Current Profile Photo</p>
+        <div className="relative w-32 h-32 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+          <div className="animate-pulse text-gray-400">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="mb-4">
+      <p className="text-sm font-semibold text-gray-900 mb-2">Current Profile Photo</p>
+      <div className="relative w-32 h-32 bg-gray-100 rounded-lg overflow-hidden">
+        <img
+          src={blobUrl}
+          alt="Current profile"
+          className="w-full h-full object-cover"
+        />
+      </div>
+    </div>
+  );
+};
 
 const EditContactModal = ({ isOpen, onClose, contact, onUpdate }) => {
   const [formStep, setFormStep] = useState(1);
@@ -122,17 +152,7 @@ const EditContactModal = ({ isOpen, onClose, contact, onUpdate }) => {
         {/* Header */}
         <div className="p-6 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            {contact?.profile_photo_url ? (
-              <img 
-                src={contact.profile_photo_url} 
-                alt={contact.name}
-                className="w-12 h-12 rounded-full object-cover"
-              />
-            ) : (
-              <div className={`w-12 h-12 rounded-full bg-${contact?.color || 'indigo'}-500 flex items-center justify-center text-white font-semibold`}>
-                {contact?.avatar || contact?.name?.substring(0, 2).toUpperCase()}
-              </div>
-            )}
+            <ContactAvatar contact={contact} size="md" />
             <h2 className="text-2xl font-bold text-gray-900">Edit Contact</h2>
           </div>
           <button
@@ -231,16 +251,7 @@ const EditContactModal = ({ isOpen, onClose, contact, onUpdate }) => {
           {formStep === 2 && (
             <div className="space-y-4">
               {contact?.profile_photo_url && (
-                <div className="mb-4">
-                  <p className="text-sm font-semibold text-gray-900 mb-2">Current Profile Photo</p>
-                  <div className="relative w-32 h-32 bg-gray-100 rounded-lg overflow-hidden">
-                    <img
-                      src={contact.profile_photo_url}
-                      alt="Current profile"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                </div>
+                <CurrentProfilePhoto photoUrl={contact.profile_photo_url} />
               )}
               <p className="text-sm text-gray-600 mb-4">
                 Upload at least 3 photos for better facial recognition accuracy

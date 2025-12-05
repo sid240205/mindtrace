@@ -20,7 +20,7 @@ bcrypt==3.2.2
 # --- Database ---
 sqlalchemy
 psycopg2-binary
-chromadb
+chromadb>=0.4.22
 
 # --- Networking ---
 httpx

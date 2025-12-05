@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { Users, Bell, Calendar, TrendingUp, Activity, Plus, ArrowRight, AlertCircle } from 'lucide-react';
+import { Users, Bell, Calendar, TrendingUp, Activity, Plus, ArrowRight, AlertCircle, Glasses } from 'lucide-react';
 import AddContactModal from '../components/AddContactModal';
 import AddReminderModal from '../components/AddReminderModal';
 import { interactionsApi, remindersApi, alertsApi, userApi } from '../services/api';
@@ -91,6 +91,13 @@ const DashboardHome = () => {
     }
   };
 
+  const launchGlassesView = () => {
+    const token = localStorage.getItem('token');
+    const glassClientUrl = import.meta.env.VITE_GLASS_CLIENT_URL || 'http://localhost:5174';
+    const url = `${glassClientUrl}?token=${encodeURIComponent(token)}`;
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="p-6 lg:p-8 max-w-[1600px] mx-auto">
       {/* Header */}
@@ -106,7 +113,7 @@ const DashboardHome = () => {
       {/* Quick Actions */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-8">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <button
             onClick={() => setIsAddContactModalOpen(true)}
             className="flex flex-col items-center gap-3 p-4 rounded-xl border border-gray-200 
@@ -153,6 +160,18 @@ const DashboardHome = () => {
               <AlertCircle className="h-6 w-6 text-red-600" />
             </div>
             <span className="text-sm font-semibold text-red-600">Emergency SOS</span>
+          </button>
+
+          <button
+            onClick={launchGlassesView}
+            className="flex flex-col items-center gap-3 p-4 rounded-xl border-2 border-indigo-200 
+              bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-300 transition-all group"
+          >
+            <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center 
+              group-hover:bg-indigo-200 transition-colors">
+              <Glasses className="h-6 w-6 text-indigo-600" />
+            </div>
+            <span className="text-sm font-semibold text-indigo-600">Launch Glasses</span>
           </button>
         </div>
       </div>
