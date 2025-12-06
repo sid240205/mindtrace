@@ -94,24 +94,29 @@ const FaceRecognition = () => {
 
             if (video.videoWidth === 0 || video.videoHeight === 0) return null;
 
-            // Optimized resolution for multi-face detection (512px matches backend)
-            const MAX_WIDTH = 512;
+            // Use 640px to match backend det_size for better detection
+            const MAX_DIM = 640;
             let width = video.videoWidth;
             let height = video.videoHeight;
 
-            if (width > MAX_WIDTH) {
-                height = Math.round((height * MAX_WIDTH) / width);
-                width = MAX_WIDTH;
-            }
+            // Scale to fit within 640x640 while maintaining aspect ratio
+            const scale = Math.min(MAX_DIM / width, MAX_DIM / height);
+            width = Math.round(width * scale);
+            height = Math.round(height * scale);
 
             canvas.width = width;
             canvas.height = height;
+            
+            // Enable image smoothing for better quality
+            context.imageSmoothingEnabled = true;
+            context.imageSmoothingQuality = 'high';
+            
             context.drawImage(video, 0, 0, width, height);
 
             return new Promise(resolve => {
                 canvas.toBlob(blob => {
                     resolve(blob);
-                }, 'image/jpeg', 0.75); // Balanced quality for better face detection
+                }, 'image/jpeg', 0.85); // Higher quality for better face detection
             });
         }
         return null;
@@ -124,20 +129,17 @@ const FaceRecognition = () => {
         const videoWidth = video.videoWidth;
         const videoHeight = video.videoHeight;
         
-        // Match the MAX_WIDTH used in captureFrame (now 512)
-        const MAX_WIDTH = 512;
-        let sentWidth = videoWidth;
-        let sentHeight = videoHeight;
-        if (videoWidth > MAX_WIDTH) {
-            sentHeight = Math.round((videoHeight * MAX_WIDTH) / videoWidth);
-            sentWidth = MAX_WIDTH;
-        }
+        // Match the MAX_DIM used in captureFrame (now 640)
+        const MAX_DIM = 640;
+        const scale = Math.min(MAX_DIM / videoWidth, MAX_DIM / videoHeight);
+        let sentWidth = Math.round(videoWidth * scale);
+        let sentHeight = Math.round(videoHeight * scale);
 
         const screenWidth = window.innerWidth;
         const screenHeight = window.innerHeight;
 
         // Calculate scale to maintain aspect ratio (object-cover)
-        const scale = Math.max(screenWidth / videoWidth, screenHeight / videoHeight);
+        const displayScale = Math.max(screenWidth / videoWidth, screenHeight / videoHeight);
         
         // bbox is [x1, y1, x2, y2] based on sentWidth/sentHeight
         const [x1, y1, x2, y2] = bbox;
@@ -150,8 +152,8 @@ const FaceRecognition = () => {
 
         // Map to video element scale (which matches screen via object-cover)
         // 1. Video frame scaling to screen
-        const scaledWidth = videoWidth * scale; // Width of video on screen
-        const scaledHeight = videoHeight * scale; // Height of video on screen
+        const scaledWidth = videoWidth * displayScale; // Width of video on screen
+        const scaledHeight = videoHeight * displayScale; // Height of video on screen
         const xOffset = (screenWidth - scaledWidth) / 2;
         const yOffset = (screenHeight - scaledHeight) / 2;
 
@@ -221,6 +223,15 @@ const FaceRecognition = () => {
             wsRef.current.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
+                    
+                    if (data.type === 'ping') {
+                        // Respond to server ping to keep connection alive
+                        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                            wsRef.current.send(JSON.stringify({ type: 'pong' }));
+                        }
+                        return;
+                    }
+                    
                     console.log("WebSocket message received:", data);
                     
                     if (data.type === 'subtitle') {

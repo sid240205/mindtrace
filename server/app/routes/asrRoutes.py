@@ -312,6 +312,8 @@ async def websocket_asr(
     last_activity_time = asyncio.get_event_loop().time()
     IDLE_TIMEOUT = 45.0 # Extended timeout for better user experience
     last_transcript = ""  # Track last transcript to avoid duplicates
+    last_ping_time = asyncio.get_event_loop().time()
+    PING_INTERVAL = 20.0  # Send ping every 20 seconds to keep connection alive
 
     if not asr_engine:
         print("❌ Error: ASR Engine is not initialized")
@@ -328,12 +330,21 @@ async def websocket_asr(
 
     try:
         while True:
+            # Send periodic ping to keep connection alive
+            current_time = asyncio.get_event_loop().time()
+            if current_time - last_ping_time > PING_INTERVAL:
+                try:
+                    await websocket.send_json({"type": "ping"})
+                    last_ping_time = current_time
+                except Exception as e:
+                    print(f"Error sending ping: {e}")
+                    break
+            
             # Receive raw bytes (float32 PCM) with timeout
             try:
                 data = await asyncio.wait_for(websocket.receive_bytes(), timeout=1.0)
             except asyncio.TimeoutError:
                 # Check if we've been idle too long
-                current_time = asyncio.get_event_loop().time()
                 if current_time - last_activity_time > IDLE_TIMEOUT:
                     print(f"ASR idle timeout reached ({IDLE_TIMEOUT}s), closing connection")
                     break

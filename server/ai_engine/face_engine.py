@@ -24,9 +24,9 @@ def load_models():
     Optimized for faster multi-face detection with balanced detection size.
     """
     app = FaceAnalysis(name="buffalo_l")
-    # Optimized detection size for better multi-face detection
-    # 512x512 provides good balance between speed and accuracy for multiple faces
-    app.prepare(ctx_id=0, det_size=(512, 512))
+    # Use (640, 640) for better detection with various aspect ratios
+    # This handles both portrait and landscape orientations better
+    app.prepare(ctx_id=0, det_size=(640, 640))
     return app
 
 def detect_and_embed(app, image):
@@ -37,9 +37,29 @@ def detect_and_embed(app, image):
     if image is None:
         print("DEBUG: Image is None in detect_and_embed")
         return []
+    
+    # Ensure image is in correct format
+    if len(image.shape) != 3 or image.shape[2] != 3:
+        print(f"DEBUG: Invalid image shape: {image.shape}")
+        return []
         
-    print(f"DEBUG: Image shape: {image.shape}")
+    print(f"DEBUG: Image shape: {image.shape}, dtype: {image.dtype}")
+    
+    # Apply histogram equalization for better detection in poor lighting
+    # Convert to LAB color space, equalize L channel, convert back
+    lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+    l = clahe.apply(l)
+    enhanced = cv2.merge([l, a, b])
+    enhanced = cv2.cvtColor(enhanced, cv2.COLOR_LAB2BGR)
+    
+    # Try detection on both original and enhanced image
     faces = app.get(image)
+    if len(faces) == 0:
+        print("DEBUG: No faces in original, trying enhanced image")
+        faces = app.get(enhanced)
+    
     print(f"DEBUG: Detected {len(faces)} faces")
     
     if len(faces) == 0:
