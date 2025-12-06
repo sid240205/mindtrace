@@ -1,4 +1,4 @@
-# 🧠 MindTrace
+# MindTrace
 
 > **AI-Powered Memory Assistant for Smart Glasses**
 
@@ -17,7 +17,7 @@
 
 ---
 
-## 📖 Overview
+## Overview
 
 MindTrace is a production-ready AI memory assistant designed for Ray-Ban Meta smart glasses and similar wearable devices. It combines real-time face recognition, live speech transcription, and context-aware AI assistance to help users—particularly those with memory challenges—navigate social interactions with confidence.
 
@@ -33,9 +33,9 @@ MindTrace is a production-ready AI memory assistant designed for Ray-Ban Meta sm
 
 ---
 
-## 🎯 Key Features
+## Key Features
 
-### 👁️ Real-Time Face Recognition
+### Real-Time Face Recognition
 
 **Technology Stack:**
 - **Detection**: RetinaFace (InsightFace buffalo_l model)
@@ -55,7 +55,7 @@ MindTrace is a production-ready AI memory assistant designed for Ray-Ban Meta sm
 - Recognition: ~10-20ms per face via ChromaDB
 - End-to-end latency: <100ms
 
-### 🎙️ Live Speech-to-Text
+### Live Speech-to-Text
 
 **Technology Stack:**
 - **ASR Model**: OpenAI Whisper (base model, English)
@@ -75,7 +75,7 @@ MindTrace is a production-ready AI memory assistant designed for Ray-Ban Meta sm
 - Latency: ~200-500ms per utterance
 - Supports continuous conversation tracking
 
-### 🤖 Context-Aware AI Assistant
+### Context-Aware AI Assistant
 
 **Technology Stack:**
 - **Model**: Google Gemini 2.5 Flash Lite
@@ -97,7 +97,7 @@ MindTrace is a production-ready AI memory assistant designed for Ray-Ban Meta sm
 - Feature navigation ("How do I add an emergency contact?")
 - Conversation insights ("What did I discuss with John last week?")
 
-### 🗄️ ChromaDB Vector Database
+### ChromaDB Vector Database
 
 **Collections:**
 
@@ -130,7 +130,7 @@ CHROMA_API_KEY=optional_for_cloud
 - **Server**: Self-hosted ChromaDB server
 - **Cloud**: Hosted at api.trychroma.com with authentication
 
-### 🚨 Emergency SOS System
+### Emergency SOS System
 
 **Features:**
 - One-button emergency activation from smart glasses
@@ -148,7 +148,7 @@ CHROMA_API_KEY=optional_for_cloud
 5. Caregivers can view real-time location on map
 6. User can cancel SOS when safe
 
-### 📊 Comprehensive Dashboard
+### Comprehensive Dashboard
 
 **Pages:**
 - **Dashboard Home**: Overview with quick stats and recent activity
@@ -162,7 +162,7 @@ CHROMA_API_KEY=optional_for_cloud
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ### System Overview
 
@@ -263,7 +263,7 @@ CHROMA_API_KEY=optional_for_cloud
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -371,7 +371,7 @@ npm run dev
 
 ---
 
-## 📦 Project Structure
+## Project Structure
 
 ```
 mindtrace/
@@ -453,7 +453,7 @@ mindtrace/
 
 ---
 
-## 🔧 API Documentation
+## API Documentation
 
 ### Face Recognition
 
@@ -579,7 +579,7 @@ photo: <file>
 
 ---
 
-## 🧪 Testing & Verification
+## Testing and Verification
 
 ### Test Face Recognition
 
@@ -617,7 +617,7 @@ curl -X POST http://localhost:8000/face/recognize \
 
 ---
 
-## 🚢 Deployment
+## Deployment
 
 ### Production Checklist
 
@@ -632,31 +632,10 @@ curl -X POST http://localhost:8000/face/recognize \
 - [ ] Test emergency SOS system end-to-end
 - [ ] Verify face recognition accuracy with test dataset
 
-### Docker Deployment (Coming Soon)
 
-```bash
-# Build and run with Docker Compose
-docker-compose up -d
-```
+## Contributing
 
-### Cloud Deployment
-
-**Server Options:**
-- AWS EC2 + RDS (PostgreSQL) + S3 (photos)
-- Google Cloud Run + Cloud SQL + Cloud Storage
-- DigitalOcean App Platform + Managed PostgreSQL
-
-**Client Options:**
-- Vercel (recommended for React apps)
-- Netlify
-- AWS Amplify
-- Cloudflare Pages
-
----
-
-## 🤝 Contributing
-
-We welcome contributions! Please follow these guidelines:
+We welcome contributions! Please follow these guidelines for contributions:
 
 ### Development Workflow
 
@@ -694,13 +673,13 @@ test: Add unit tests for ASR engine
 
 ---
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 ### Open Source Projects
 - [InsightFace](https://github.com/deepinsight/insightface) - Face recognition models (RetinaFace + ArcFace)
@@ -718,44 +697,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/yourusername/mindtrace/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/mindtrace/discussions)
-- **Email**: support@mindtrace.dev
-
----
-
-## 🗺️ Roadmap
-
-### v1.1 (Q1 2025)
-- [ ] Voice command activation ("Hey MindTrace")
-- [ ] Offline face recognition mode
-- [ ] Multi-language ASR support (Spanish, French, German)
-- [ ] Mobile companion app (iOS/Android)
-
-### v1.2 (Q2 2025)
-- [ ] Apple Watch / WearOS integration
-- [ ] Health tracking device integration (Fitbit, Apple Health)
-- [ ] Advanced conversation analytics
-- [ ] Custom wake word training
-
-### v2.0 (Q3 2025)
-- [ ] On-device ML inference (TensorFlow Lite)
-- [ ] Federated learning for privacy
-- [ ] Multi-user support for families
-- [ ] Integration with smart home devices
-
----
-
-<p align="center">
-  <sub>Built with ❤️ for those who need a little help remembering</sub>
-</p>
-
-<p align="center">
-  <a href="#-mindtrace">⬆ Back to Top</a>
-</p>
-
----
-
-**⭐ If you find MindTrace helpful, please consider giving it a star!**
+**If you find MindTrace helpful, please consider starring the repository.**
