@@ -142,14 +142,11 @@ const AiSummarizer = () => {
   };
 
   const suggestedQuestions = [
-    "What's John's phone number?",
     "Who have I talked to most recently?",
-    "Tell me about my relationship with Sarah",
     "When was the last time I spoke with my doctor?",
     "What are all my family contacts?",
     "How many interactions did I have this week?",
     "What health topics came up in my conversations?",
-    "Who should I reach out to that I haven't talked to in a while?"
   ];
 
   return (
