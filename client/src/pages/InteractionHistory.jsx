@@ -243,7 +243,7 @@ const InteractionHistory = () => {
                     name: interaction.contact_name,
                     avatar: interaction.contact_avatar,
                     color: interaction.contact_color,
-                    profile_photo_url: interaction.contact_id ? `/contacts/${interaction.contact_id}/photo` : null
+                    profile_photo_url: interaction.contact_photo_url
                   }}
                   size="lg"
                   className="shrink-0"
@@ -326,7 +326,7 @@ const InteractionHistory = () => {
                     name: selectedInteraction.contact_name,
                     avatar: selectedInteraction.contact_avatar,
                     color: selectedInteraction.contact_color,
-                    profile_photo_url: selectedInteraction.contact_id ? `/contacts/${selectedInteraction.contact_id}/photo` : null
+                    profile_photo_url: selectedInteraction.contact_photo_url
                   }}
                   size="lg"
                 />
