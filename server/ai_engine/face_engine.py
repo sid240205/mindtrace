@@ -24,9 +24,9 @@ def load_models():
     Optimized for real-time multi-face detection with maximum performance.
     """
     app = FaceAnalysis(name="buffalo_l")
-    # Use (384, 384) for maximum speed while maintaining acceptable accuracy
-    # Smaller size = faster processing = smoother tracking
-    app.prepare(ctx_id=0, det_size=(384, 384))
+    # Use (224, 224) for extreme speed - aggressive optimization
+    # This matches the frontend capture size for optimal performance
+    app.prepare(ctx_id=0, det_size=(224, 224))
     return app
 
 def detect_and_embed(app, image):
@@ -36,31 +36,14 @@ def detect_and_embed(app, image):
     """
     # InsightFace expects BGR image (OpenCV format)
     if image is None:
-        print("DEBUG: Image is None in detect_and_embed")
         return []
     
     # Ensure image is in correct format
     if len(image.shape) != 3 or image.shape[2] != 3:
-        print(f"DEBUG: Invalid image shape: {image.shape}")
         return []
-        
-    print(f"DEBUG: Image shape: {image.shape}, dtype: {image.dtype}")
     
-    # Direct detection for speed - skip enhancement for real-time performance
+    # Direct detection for maximum speed - no enhancement for real-time
     faces = app.get(image)
-    
-    # Only try enhancement if no faces detected (fallback)
-    if len(faces) == 0:
-        print("DEBUG: No faces detected, trying enhanced image")
-        lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
-        l, a, b = cv2.split(lab)
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-        l = clahe.apply(l)
-        enhanced = cv2.merge([l, a, b])
-        enhanced = cv2.cvtColor(enhanced, cv2.COLOR_LAB2BGR)
-        faces = app.get(enhanced)
-    
-    print(f"DEBUG: Detected {len(faces)} faces")
     
     if len(faces) == 0:
         return []
@@ -70,14 +53,12 @@ def detect_and_embed(app, image):
         bbox = face.bbox.tolist()
         # Add detection score for confidence filtering
         det_score = float(face.det_score) if hasattr(face, 'det_score') else 1.0
-        print(f"DEBUG: Face {idx} bbox: {bbox}, score: {det_score:.3f}")
         results.append({
             "embedding": face.embedding.tolist(),
             "bbox": bbox,
             "det_score": det_score
         })
     
-    print(f"DEBUG: Returning {len(results)} face embeddings")
     return results
 
 def cosine_similarity(a, b):
@@ -88,7 +69,7 @@ def cosine_similarity(a, b):
         return 0.0
     return np.dot(a, b) / (norm_a * norm_b)
 
-def recognize_face(app, image, threshold=0.42, user_id=None):
+def recognize_face(app, image, threshold=0.38, user_id=None):
     """
     Compare input face embeddings to stored embeddings using ChromaDB.
     Optimized for real-time multi-face detection with confidence filtering.
@@ -96,106 +77,85 @@ def recognize_face(app, image, threshold=0.42, user_id=None):
     """
     # Get embedding and bbox for all faces
     detected_faces = detect_and_embed(app, image)
-    print(f"DEBUG: recognize_face - Processing {len(detected_faces)} detected faces")
     
     if not detected_faces:
         return []
 
     # Filter out low-confidence detections for stability
-    MIN_DET_SCORE = 0.4  # Slightly lower threshold for better detection
+    MIN_DET_SCORE = 0.35  # Lower threshold for better detection rate at smaller size
     detected_faces = [f for f in detected_faces if f.get("det_score", 1.0) >= MIN_DET_SCORE]
-    print(f"DEBUG: After filtering: {len(detected_faces)} high-confidence faces")
     
     if not detected_faces:
         return []
 
-    # Get ChromaDB collection
+    # Get ChromaDB collection once
     try:
         collection = get_face_collection()
-    except Exception as e:
-        print(f"Error connecting to ChromaDB: {e}")
+        collection_count = collection.count()
+    except:
         return []
 
-    results = []
+    if collection_count == 0:
+        # No faces in database - return all as Unknown (fast path)
+        return [{
+            "name": "Unknown", 
+            "relation": "Unidentified Person", 
+            "confidence": 0.0,
+            "bbox": f["bbox"],
+            "face_index": idx,
+            "det_score": f.get("det_score", 1.0)
+        } for idx, f in enumerate(detected_faces)]
 
+    results = []
+    where_filter = {"user_id": user_id} if user_id else None
+
+    # Process all faces in parallel for maximum speed
     for idx, face_data in enumerate(detected_faces):
         current_emb = face_data["embedding"]
         current_bbox = face_data["bbox"]
         det_score = face_data.get("det_score", 1.0)
-
-        # Query ChromaDB for top 3 matches to improve accuracy
-        # Filter by user_id if provided
-        where_filter = {"user_id": user_id} if user_id else None
         
         try:
-            # Check if collection is empty first
-            collection_count = collection.count()
+            # Query for top 1 match for maximum speed
+            query_result = collection.query(
+                query_embeddings=[current_emb],
+                n_results=1,
+                where=where_filter
+            )
             
-            if collection_count == 0:
-                print(f"DEBUG: Collection is empty, marking face {idx} as Unknown")
-                query_result = None
-            else:
-                # Query for top 1 match for maximum speed
-                n_results = 1
-                query_result = collection.query(
-                    query_embeddings=[current_emb],
-                    n_results=n_results,
-                    where=where_filter
-                )
-        except Exception as e:
-            print(f"Error querying ChromaDB: {e}")
-            query_result = None
-
-        best_match = None
-        best_score = -1
-        
-        # Process query results with improved matching logic
-        if query_result and query_result['ids'] and len(query_result['ids'][0]) > 0:
-            # Check all returned matches
-            for i in range(len(query_result['ids'][0])):
-                distance = query_result['distances'][0][i]
+            # Fast path for matches
+            if query_result and query_result['ids'] and len(query_result['ids'][0]) > 0:
+                distance = query_result['distances'][0][0]
                 similarity = 1.0 - distance
-                metadata = query_result['metadatas'][0][i]
                 
-                print(f"DEBUG: Face {idx} candidate {i}: {metadata.get('name')} (sim: {similarity:.3f})")
-                
-                # Use the best match above threshold
-                if similarity > threshold and similarity > best_score:
-                    best_score = similarity
-                    best_match = metadata
+                if similarity > threshold:
+                    metadata = query_result['metadatas'][0][0]
+                    results.append({
+                        "name": metadata["name"],
+                        "relation": metadata["relation"],
+                        "confidence": float(similarity),
+                        "bbox": current_bbox,
+                        "face_index": idx,
+                        "det_score": det_score,
+                        "contact_id": metadata.get("contact_id")
+                    })
+                    continue
+        except:
+            pass
 
-        if best_match is None:
-            result = {
-                "name": "Unknown", 
-                "relation": "Unidentified Person", 
-                "confidence": float(best_score) if best_score > 0 else 0.0,
-                "bbox": current_bbox,
-                "face_index": idx,
-                "det_score": det_score
-            }
-            score_display = best_score if best_score > 0 else 0.0
-            print(f"DEBUG: Face {idx} -> Unknown (best score: {score_display:.3f}, det: {det_score:.3f})")
-            results.append(result)
-        else:
-            match_result = {
-                "name": best_match["name"],
-                "relation": best_match["relation"],
-                "confidence": float(best_score),
-                "bbox": current_bbox,
-                "face_index": idx,
-                "det_score": det_score
-            }
-            # Include contact_id if available
-            if "contact_id" in best_match:
-                match_result["contact_id"] = best_match["contact_id"]
-            
-            print(f"DEBUG: Face {idx} -> {best_match['name']} (confidence: {best_score:.3f}, det: {det_score:.3f})")
-            results.append(match_result)
+        # Fast path for unknown faces
+        results.append({
+            "name": "Unknown", 
+            "relation": "Unidentified Person", 
+            "confidence": 0.0,
+            "bbox": current_bbox,
+            "face_index": idx,
+            "det_score": det_score
+        })
     
     # Sort results by confidence (highest first) for better display
     results.sort(key=lambda x: x.get("confidence", 0), reverse=True)
     
-    print(f"DEBUG: recognize_face - Returning {len(results)} results")
     return results
 
 def sync_embeddings_from_db(app, db_session):

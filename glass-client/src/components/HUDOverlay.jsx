@@ -26,10 +26,12 @@ const HUDOverlay = ({ mode, recognitionResult, debugStatus, subtitle }) => {
             position: 'absolute',
             left: `${left + horizontalOffset}px`,
             top: `${top + verticalOffset}px`,
-            transition: 'left 0.05s linear, top 0.05s linear',
-            willChange: 'transform',
+            transition: 'left 0.02s linear, top 0.02s linear',
+            willChange: 'transform, left, top',
             transform: 'translate3d(0, 0, 0)',
-            zIndex: 1000 + index // Ensure proper stacking
+            zIndex: 1000 + index, // Ensure proper stacking
+            backfaceVisibility: 'hidden',
+            perspective: 1000
         };
     };
 
@@ -148,27 +150,7 @@ const HUDOverlay = ({ mode, recognitionResult, debugStatus, subtitle }) => {
                     </div>
                 </div>
 
-                {/* Bounding Boxes for all detected faces */}
-                {recognitionResult && Array.isArray(recognitionResult) && recognitionResult.map((result, index) => (
-                    result.position && (
-                        <div
-                            key={`bbox-${result.name}-${result.confidence}-${index}`}
-                            style={{
-                                position: 'absolute',
-                                left: `${result.position.left}px`,
-                                top: `${result.position.top}px`,
-                                width: `${result.position.width}px`,
-                                height: `${result.position.height}px`,
-                                border: '2px solid rgba(99, 102, 241, 0.8)',
-                                boxShadow: '0 0 20px rgba(99, 102, 241, 0.5)',
-                                pointerEvents: 'none',
-                                willChange: 'transform',
-                                transform: 'translate3d(0, 0, 0)',
-                                transition: 'left 0.05s linear, top 0.05s linear, width 0.05s linear, height 0.05s linear'
-                            }}
-                        />
-                    )
-                ))}
+
 
                 {/* Tracking Tags */}
                 {recognitionResult && Array.isArray(recognitionResult) && recognitionResult.map((result, index) => (
@@ -230,27 +212,7 @@ const HUDOverlay = ({ mode, recognitionResult, debugStatus, subtitle }) => {
                 <div className="w-2 h-2 bg-white rounded-full shadow-lg" />
             </div>
 
-            {/* Bounding Boxes for all detected faces */}
-            {recognitionResult && Array.isArray(recognitionResult) && recognitionResult.map((result, index) => (
-                result.position && (
-                    <div
-                        key={`bbox-${result.name}-${result.confidence}-${index}`}
-                        style={{
-                            position: 'absolute',
-                            left: `${result.position.left}px`,
-                            top: `${result.position.top}px`,
-                            width: `${result.position.width}px`,
-                            height: `${result.position.height}px`,
-                            border: '2px solid rgba(255, 255, 255, 0.5)',
-                            boxShadow: '0 0 20px rgba(255, 255, 255, 0.3)',
-                            pointerEvents: 'none',
-                            willChange: 'transform',
-                            transform: 'translate3d(0, 0, 0)',
-                            transition: 'left 0.05s linear, top 0.05s linear, width 0.05s linear, height 0.05s linear'
-                        }}
-                    />
-                )
-            ))}
+
 
             {/* Tracking Tags - Minimal for Ray-Ban */}
             {recognitionResult && Array.isArray(recognitionResult) && recognitionResult.map((result, index) => (
