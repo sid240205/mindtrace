@@ -34,7 +34,6 @@ async def recognize_face_endpoint(
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         
         if img is None:
-             print("DEBUG: Failed to decode image in recognize_face_endpoint")
              raise HTTPException(status_code=400, detail="Invalid image data")
 
         # Pass user_id to restrict recognition to user's contacts
@@ -45,49 +44,53 @@ async def recognize_face_endpoint(
         if result is None:
             result = []
         
-        # Log recognition results for debugging
-        if result and len(result) > 0:
-            names = [r.get("name", "Unknown") for r in result]
-            confidences = [f"{r.get('confidence', 0):.2f}" for r in result]
-            print(f"DEBUG: API Response - Recognized {len(result)} face(s): {', '.join([f'{n} ({c})' for n, c in zip(names, confidences)])}")
-            print(f"DEBUG: Full result structure: {result}")
-        else:
-            print("DEBUG: No faces detected in frame - returning empty array")
-        
-        # If contacts are recognized, enrich with details AND update their last_seen timestamp
+        # If contacts are recognized, enrich with details (batch query for performance)
         if result:
             from datetime import datetime, timezone
             from ..models import Interaction
             
-            for res in result:
-                if res.get("name") != "Unknown" and "contact_id" in res:
-                    contact = db.query(Contact).filter(
-                        Contact.id == res["contact_id"]
-                    ).first()
-                    
-                    if contact:
-                        # 1. Capture the PREVIOUS last_seen time before we update it
-                        # We want to show when they *last* met, not "just now"
-                        last_seen_time = contact.last_seen
-                        res["last_seen_timestamp"] = last_seen_time.isoformat() if last_seen_time else None
+            # Collect all contact IDs for batch query
+            contact_ids = [res["contact_id"] for res in result if res.get("name") != "Unknown" and "contact_id" in res]
+            
+            if contact_ids:
+                # Batch query contacts
+                contacts = db.query(Contact).filter(Contact.id.in_(contact_ids)).all()
+                contact_map = {c.id: c for c in contacts}
+                
+                # Batch query last interactions
+                last_interactions = db.query(Interaction).filter(
+                    Interaction.contact_id.in_(contact_ids)
+                ).order_by(Interaction.contact_id, Interaction.timestamp.desc()).all()
+                
+                # Group interactions by contact_id
+                interaction_map = {}
+                for interaction in last_interactions:
+                    if interaction.contact_id not in interaction_map:
+                        interaction_map[interaction.contact_id] = interaction
+                
+                # Enrich results
+                for res in result:
+                    if res.get("name") != "Unknown" and "contact_id" in res:
+                        contact_id = res["contact_id"]
+                        contact = contact_map.get(contact_id)
                         
-                        # 2. Fetch the last interaction summary
-                        last_interaction = db.query(Interaction).filter(
-                            Interaction.contact_id == contact.id
-                        ).order_by(Interaction.timestamp.desc()).first()
-                        
-                        res["last_conversation_summary"] = last_interaction.summary if last_interaction else None
-                        
-                        # 3. Update last_seen to NOW
-                        contact.last_seen = datetime.now(timezone.utc)
-            db.commit()
+                        if contact:
+                            # Capture PREVIOUS last_seen time
+                            last_seen_time = contact.last_seen
+                            res["last_seen_timestamp"] = last_seen_time.isoformat() if last_seen_time else None
+                            
+                            # Get last interaction summary
+                            last_interaction = interaction_map.get(contact_id)
+                            res["last_conversation_summary"] = last_interaction.summary if last_interaction else None
+                            
+                            # Update last_seen to NOW
+                            contact.last_seen = datetime.now(timezone.utc)
+                
+                db.commit()
         
         return JSONResponse(content=result, status_code=200)
 
     except Exception as e:
-        print(f"Error in recognize_face_endpoint: {e}")
-        import traceback
-        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/sync-from-database")
